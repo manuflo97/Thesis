@@ -1,12 +1,15 @@
-################################################################################
+###############################################################################
 # IMPORT STATEMENTS ############################################################
 ################################################################################
+import tudatpy.kernel.numerical_simulation.propagation_setup.integrator
 from tudatpy.util import result2array
 from tudatpy.kernel import constants
 from tudatpy.kernel import numerical_simulation
 from tudatpy.kernel.interface import spice
 from tudatpy.kernel.numerical_simulation import environment_setup
 from tudatpy.kernel.numerical_simulation import propagation_setup, propagation
+import numpy as np
+import json
 
 ################################################################################
 # GENERAL SIMULATION SETUP #####################################################
@@ -19,7 +22,7 @@ spice.load_standard_kernels()
 simulation_start_epoch = 1.0e7
 
 # Set simulation end epoch.
-simulation_end_epoch = 1.0e7 + 40.0 * constants.JULIAN_YEAR
+simulation_end_epoch = 1.0e7 + 0.5 * constants.JULIAN_YEAR
 
 ################################################################################
 # SETUP ENVIRONMENT ############################################################
@@ -33,11 +36,12 @@ bodies_to_create = bodies_to_propagate = [
 ]
 
 # Create bodies in simulation.
-#global_frame_origin = "SSB"
-#global_frame_orientation = "J2000"
+global_frame_origin = "SSB"
+global_frame_orientation = "ECLIPJ2000"
 body_settings = environment_setup.get_default_body_settings(bodies_to_create)
-body_system = environment_setup.create_system_of_bodies(body_settings)
 
+body_system = environment_setup.create_system_of_bodies(body_settings)
+#Io_system = environment_setup.create_system_of_bodies(Io_settings)
 ################################################################################
 # SETUP PROPAGATION ############################################################
 ################################################################################
@@ -106,10 +110,15 @@ for propagation_variant in ["barycentric", "hierarchical"]:
         termination_condition,
     )
     # Create numerical integrator settings.
-    fixed_step_size = 3600.0
-    integrator_settings = propagation_setup.integrator.runge_kutta_4(
-        simulation_start_epoch, fixed_step_size
-    )
+   # fixed_step_size = 1800.0
+    integrator_settings = propagation_setup.integrator.runge_kutta_variable_step_size(simulation_start_epoch,1800,
+                                                                                      tudatpy.kernel.numerical_simulation.propagation_setup.integrator.rkf_56,
+                                                                                      120,3600,
+                                                                                      1e-10,1e-11,1,False,0.8,
+                                                                                      4.0,0.1,True)
+ #       simulation_start_epoch, fixed_step_size
+  #  )
+
 
     ############################################################################
     # PROPAGATE ################################################################
@@ -121,6 +130,7 @@ for propagation_variant in ["barycentric", "hierarchical"]:
 
     # Propagate and store results to outer loop results dictionary.
     results[propagation_variant] = dynamics_simulator.state_history
+
 ################################################################################
 # VISUALISATION / OUTPUT / PRELIMINARY ANALYSIS ################################
 ################################################################################
@@ -142,7 +152,7 @@ def plot_multi_body_system_state_history(system_state_history_array, propagated_
 
         fig1 = plt.figure(figsize=(8, 24))  #figsize=plt.figaspect(3))
 
-        ax1 = fig1.add_subplot(311, projection='3d')
+        ax1 = fig1.add_subplot(111, projection='3d')
         ax1.set_title(f'Trajectory of Io w.r.t. Jupiter')
         ax1.scatter(0, 0, 0, marker='x', label="Jupiter")
 
@@ -203,4 +213,22 @@ hierarchical_system_state_array = result2array(results['hierarchical'])
 figA = plot_multi_body_system_state_history(barycentric_system_state_array, bodies_to_propagate)
 figB = plot_multi_body_system_state_history(hierarchical_system_state_array, bodies_to_propagate, hierarchical=True)
 plt.tight_layout()
-plt.show()
+#plt.show()
+
+
+barycentric_system_state = spice.get_body_cartesian_state_at_epoch(target_body_name="Io",
+                                                                         observer_body_name="Jupiter",
+                                                                         reference_frame_name="ECLIPJ2000",
+                                                                         aberration_corrections="NONE",
+                                                                         ephemeris_time=1.0e7)
+
+ephemeris={"X":barycentric_system_state[0],
+            "Y":barycentric_system_state[1],
+            "Z":barycentric_system_state[2],
+            "Vx":barycentric_system_state[3],
+            "Vy":barycentric_system_state[4],
+            "Vz":barycentric_system_state[5]}
+
+with open('ephemeris.txt', 'w') as convert_file:
+    convert_file.write(json.dumps(ephemeris))
+
