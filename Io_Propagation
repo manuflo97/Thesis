@@ -1,4 +1,4 @@
-###############################################################################
+################################################################################
 # IMPORT STATEMENTS ############################################################
 ################################################################################
 import tudatpy.kernel.numerical_simulation.propagation_setup.integrator
@@ -10,6 +10,8 @@ from tudatpy.kernel.numerical_simulation import environment_setup
 from tudatpy.kernel.numerical_simulation import propagation_setup, propagation
 import numpy as np
 import json
+import pandas as pd
+from pandas import DataFrame
 
 ################################################################################
 # GENERAL SIMULATION SETUP #####################################################
@@ -22,7 +24,7 @@ spice.load_standard_kernels()
 simulation_start_epoch = 1.0e7
 
 # Set simulation end epoch.
-simulation_end_epoch = 1.0e7 + 0.5 * constants.JULIAN_YEAR
+simulation_end_epoch = 1.0e7 + 5.0 * constants.JULIAN_YEAR
 
 ################################################################################
 # SETUP ENVIRONMENT ############################################################
@@ -111,10 +113,11 @@ for propagation_variant in ["barycentric", "hierarchical"]:
     )
     # Create numerical integrator settings.
    # fixed_step_size = 1800.0
-    integrator_settings = propagation_setup.integrator.runge_kutta_variable_step_size(simulation_start_epoch,1800,
+    integrator_settings = propagation_setup.integrator.runge_kutta_variable_step_size(simulation_start_epoch,900,
                                                                                       tudatpy.kernel.numerical_simulation.propagation_setup.integrator.rkf_56,
-                                                                                      120,3600,
-                                                                                      1e-10,1e-11,1,False,0.8,
+                                                                                      120,1800,
+                                                                                      1e-10,1e-11,
+                                                                                      1,False,0.8,
                                                                                       4.0,0.1,True)
  #       simulation_start_epoch, fixed_step_size
   #  )
@@ -213,8 +216,7 @@ hierarchical_system_state_array = result2array(results['hierarchical'])
 figA = plot_multi_body_system_state_history(barycentric_system_state_array, bodies_to_propagate)
 figB = plot_multi_body_system_state_history(hierarchical_system_state_array, bodies_to_propagate, hierarchical=True)
 plt.tight_layout()
-#plt.show()
-
+plt.show()
 
 barycentric_system_state = spice.get_body_cartesian_state_at_epoch(target_body_name="Io",
                                                                          observer_body_name="Jupiter",
@@ -222,13 +224,19 @@ barycentric_system_state = spice.get_body_cartesian_state_at_epoch(target_body_n
                                                                          aberration_corrections="NONE",
                                                                          ephemeris_time=1.0e7)
 
-ephemeris={"X":barycentric_system_state[0],
-            "Y":barycentric_system_state[1],
-            "Z":barycentric_system_state[2],
-            "Vx":barycentric_system_state[3],
-            "Vy":barycentric_system_state[4],
-            "Vz":barycentric_system_state[5]}
+state=[]
 
-with open('ephemeris.txt', 'w') as convert_file:
-    convert_file.write(json.dumps(ephemeris))
 
+times=barycentric_system_state_array[:,0]
+
+for t in times:
+    barycentric_system_state = spice.get_body_cartesian_state_at_epoch(target_body_name="Jupiter",
+                                                                       observer_body_name="SSB",
+                                                                       reference_frame_name="ECLIPJ2000",
+                                                                       aberration_corrections="NONE",
+                                                                       ephemeris_time=t)
+    state.append(barycentric_system_state)
+
+ephemeris=pd.DataFrame(data=state,
+                       columns="X Y Z Vx Vy Vz".split())
+print(ephemeris)
