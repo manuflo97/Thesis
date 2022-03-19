@@ -1,7 +1,7 @@
-################################################################################
 # IMPORT STATEMENTS ############################################################
 ################################################################################
 import tudatpy.kernel.numerical_simulation.propagation_setup.integrator
+from tudatpy.kernel.numerical_simulation.propagation import get_state_of_bodies
 from tudatpy.util import result2array
 from tudatpy.kernel import constants
 from tudatpy.kernel import numerical_simulation
@@ -31,24 +31,22 @@ simulation_end_epoch = 1.0e7 + 5.0 * constants.JULIAN_YEAR
 ################################################################################
 
 # Define bodies in simulation.
-bodies_to_create = bodies_to_propagate = [
-    "Sun",
-    "Io",
-    "Jupiter"
-]
+bodies_to_create = bodies_to_propagate = ["Sun","Io","Jupiter","Mercury","Venus","Earth","Moon","Mars","Uranus",
+                                          "Europa","Ganymede","Neptune",
+                                          "Callisto"]
 
 # Create bodies in simulation.
 global_frame_origin = "SSB"
 global_frame_orientation = "ECLIPJ2000"
 body_settings = environment_setup.get_default_body_settings(bodies_to_create)
-
 body_system = environment_setup.create_system_of_bodies(body_settings)
-#Io_system = environment_setup.create_system_of_bodies(Io_settings)
+
 ################################################################################
 # SETUP PROPAGATION ############################################################
 ################################################################################
 
 results = {}
+
 for propagation_variant in ["barycentric", "hierarchical"]:
 
     ############################################################################
@@ -78,6 +76,8 @@ for propagation_variant in ["barycentric", "hierarchical"]:
                 central_bodies.append("Jupiter")
             elif body_name == "Sun":
                 central_bodies.append("SSB")
+            elif body_name == "Moon":
+                central_bodies.append("Earth")
             else:
                 central_bodies.append("Sun")
 
@@ -103,6 +103,10 @@ for propagation_variant in ["barycentric", "hierarchical"]:
     # Create termination settings.
     termination_condition = propagation_setup.propagator.time_termination(simulation_end_epoch)
 
+    dependent_variables_to_save = [
+        propagation_setup.dependent_variable.keplerian_state("Io", "Jupiter")
+    ]
+
     # Create propagation settings.
     propagator_settings = propagation_setup.propagator.translational(
         central_bodies,
@@ -110,18 +114,18 @@ for propagation_variant in ["barycentric", "hierarchical"]:
         bodies_to_propagate,
         system_initial_state,
         termination_condition,
+        output_variables=dependent_variables_to_save
     )
     # Create numerical integrator settings.
    # fixed_step_size = 1800.0
     integrator_settings = propagation_setup.integrator.runge_kutta_variable_step_size(simulation_start_epoch,900,
-                                                                                      tudatpy.kernel.numerical_simulation.propagation_setup.integrator.rkf_56,
-                                                                                      120,1800,
-                                                                                      1e-10,1e-11,
+                                                                                      tudatpy.kernel.numerical_simulation.propagation_setup.integrator.rkf_78,
+                                                                                      12,1800,
+                                                                                      1e-10,1e-10,
                                                                                       1,False,0.8,
                                                                                       4.0,0.1,True)
  #       simulation_start_epoch, fixed_step_size
   #  )
-
 
     ############################################################################
     # PROPAGATE ################################################################
@@ -129,10 +133,12 @@ for propagation_variant in ["barycentric", "hierarchical"]:
 
     # Instantiate the dynamics simulator.
     dynamics_simulator = numerical_simulation.SingleArcSimulator(
-        body_system, integrator_settings, propagator_settings)
+        body_system, integrator_settings, propagator_settings,print_dependent_variable_data=True)
 
     # Propagate and store results to outer loop results dictionary.
     results[propagation_variant] = dynamics_simulator.state_history
+    # Dependent variables
+    dep_var = dynamics_simulator.dependent_variable_history
 
 ################################################################################
 # VISUALISATION / OUTPUT / PRELIMINARY ANALYSIS ################################
@@ -216,27 +222,70 @@ hierarchical_system_state_array = result2array(results['hierarchical'])
 figA = plot_multi_body_system_state_history(barycentric_system_state_array, bodies_to_propagate)
 figB = plot_multi_body_system_state_history(hierarchical_system_state_array, bodies_to_propagate, hierarchical=True)
 plt.tight_layout()
+#plt.show()
+
+stateio=[]
+statejup=[]
+timess=barycentric_system_state_array[:,0]
+#for i, body in enumerate(bodies_to_propagate):
+#    if body == "Jupiter":
+ ##       for t in times:
+   #         barycentric_jupiter_state = spice.get_body_cartesian_state_at_epoch(target_body_name="Jupiter",
+    #                                                                           observer_body_name="SSB",
+     #                                                                          reference_frame_name="ECLIPJ2000",
+      #                                                                         aberration_corrections="NONE",
+    ##                                                                           ephemeris_time=t)
+      #      statejup.append(barycentric_jupiter_state)
+    #elif body == "Io":
+     #   for t in times:
+      #      barycentric_io_state = spice.get_body_cartesian_state_at_epoch(target_body_name="Io",
+       #                                                                        observer_body_name="Jupiter",
+        #                                                                       reference_frame_name="ECLIPJ2000",
+         #                                                                      aberration_corrections="NONE",
+          #                                                               ephemeris_time=t)
+           # stateio.append(barycentric_io_state)
+
+df_array=pd.DataFrame(data=barycentric_system_state_array)
+
+dep_var_array = result2array(dep_var)
+times = dep_var_array[:,0]
+time_step = times-1.0e7
+time_day = time_step / (3600*24)
+
+keplerian_el = pd.DataFrame(data=dep_var_array, columns ="t a e i RAAN Argument_pericenter true_anomaly".split())
+
+
+fig, ((ax2, ax3), (ax4, ax5)) = plt.subplots(2, 2, figsize=(9, 12))
+fig.suptitle('Evolution of Kepler elements of Io during the propagation.')
+
+#SEMI MAJOR AXIS
+semi_major_axis = keplerian_el.loc[:,"a"]
+ax2.plot(time_day, semi_major_axis)
+ax2.set_ylabel('Semi-major axis [m]')
+#ax2.set_ylim([410000*1e3, 430000*1e3])
+
+
+#ECCENTRICITY
+eccentricity = keplerian_el.loc[:,"e"]
+ax3.plot(time_day, eccentricity)
+ax3.set_ylabel('Eccentricity [-]')
+
+#INCLINATION
+inclination = np.rad2deg(keplerian_el.loc[:,"i"])
+ax4.plot(time_day, inclination)
+ax4.set_ylabel('inclination [deg]')
+#ax4.set_ylim(2.201, 2.203)
+
+#RAAN
+raan = np.rad2deg(keplerian_el.loc[:,"RAAN"])
+ax5.plot(time_day, raan)
+ax5.set_ylabel('RAAN [deg]')
+
+for ax in fig.get_axes():
+    ax.set_xlabel('Time [day]')
+    ax.set_xlim([min(time_day), max(time_day)])
+    ax.grid()
+    ax.relim()
+    ax.autoscale_view()
+plt.tight_layout()
 plt.show()
-
-barycentric_system_state = spice.get_body_cartesian_state_at_epoch(target_body_name="Io",
-                                                                         observer_body_name="Jupiter",
-                                                                         reference_frame_name="ECLIPJ2000",
-                                                                         aberration_corrections="NONE",
-                                                                         ephemeris_time=1.0e7)
-
-state=[]
-
-
-times=barycentric_system_state_array[:,0]
-
-for t in times:
-    barycentric_system_state = spice.get_body_cartesian_state_at_epoch(target_body_name="Jupiter",
-                                                                       observer_body_name="SSB",
-                                                                       reference_frame_name="ECLIPJ2000",
-                                                                       aberration_corrections="NONE",
-                                                                       ephemeris_time=t)
-    state.append(barycentric_system_state)
-
-ephemeris=pd.DataFrame(data=state,
-                       columns="X Y Z Vx Vy Vz".split())
-print(ephemeris)
