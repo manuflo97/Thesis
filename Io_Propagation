@@ -31,7 +31,7 @@ simulation_end_epoch = 1.0e7 + 5.0 * constants.JULIAN_YEAR
 ################################################################################
 
 # Define bodies in simulation.
-bodies_to_create = bodies_to_propagate = ["Sun","Io","Jupiter"]#,"Europa","Ganymede","Callisto","Earth","Moon"]
+bodies_to_create = bodies_to_propagate = ["Sun","Io","Jupiter"]#,"Europa","Ganymede","Callisto"]#,"Earth","Moon"]
 
 # Create bodies in simulation.
 global_frame_origin = "SSB"
@@ -176,7 +176,18 @@ def plot_multi_body_system_state_history(system_state_history_array, propagated_
                 ax1.plot(system_state_history_array[:, 6 * i + 1], system_state_history_array[:, 6 * i + 2],
                          system_state_history_array[:, 6 * i + 3],
                          label=body)
-
+            elif body == "Europa":
+                ax1.plot(system_state_history_array[:, 6 * i + 1], system_state_history_array[:, 6 * i + 2],
+                         system_state_history_array[:, 6 * i + 3],
+                         label=body)
+            elif body == "Ganymede":
+                ax1.plot(system_state_history_array[:, 6 * i + 1], system_state_history_array[:, 6 * i + 2],
+                         system_state_history_array[:, 6 * i + 3],
+                         label=body)
+            elif body == "Callisto":
+                ax1.plot(system_state_history_array[:, 6 * i + 1], system_state_history_array[:, 6 * i + 2],
+                         system_state_history_array[:, 6 * i + 3],
+                         label=body)
 
         axs = [ax1]
         ax_lims = [-5.0E8, 5.0E8]  # equal axis limit per subplot, [m]
@@ -230,7 +241,7 @@ plt.tight_layout()
 
 #stateio=[]
 #statejup=[]
-#timess=barycentric_system_state_array[:,0]
+#times=barycentric_system_state_array[:,0]
 #for i, body in enumerate(bodies_to_propagate):
 #    if body == "Jupiter":
  ##       for t in times:
