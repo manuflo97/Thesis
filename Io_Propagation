@@ -31,9 +31,7 @@ simulation_end_epoch = 1.0e7 + 5.0 * constants.JULIAN_YEAR
 ################################################################################
 
 # Define bodies in simulation.
-bodies_to_create = bodies_to_propagate = ["Sun","Io","Jupiter","Mercury","Venus","Earth","Moon","Mars","Uranus",
-                                          "Europa","Ganymede","Neptune",
-                                          "Callisto"]
+bodies_to_create = bodies_to_propagate = ["Sun","Io","Jupiter"]#,"Europa","Ganymede","Callisto","Earth","Moon"]
 
 # Create bodies in simulation.
 global_frame_origin = "SSB"
@@ -74,10 +72,16 @@ for propagation_variant in ["barycentric", "hierarchical"]:
         for body_name in bodies_to_create:
             if body_name == "Io":
                 central_bodies.append("Jupiter")
-            elif body_name == "Sun":
-                central_bodies.append("SSB")
+            elif body_name == "Europa":
+                central_bodies.append("Jupiter")
+            elif body_name == "Ganymede":
+                central_bodies.append("Jupiter")
+            elif body_name == "Callisto":
+                central_bodies.append("Jupiter")
             elif body_name == "Moon":
                 central_bodies.append("Earth")
+            elif body_name == "Sun":
+                central_bodies.append("SSB")
             else:
                 central_bodies.append("Sun")
 
@@ -224,9 +228,9 @@ figB = plot_multi_body_system_state_history(hierarchical_system_state_array, bod
 plt.tight_layout()
 #plt.show()
 
-stateio=[]
-statejup=[]
-timess=barycentric_system_state_array[:,0]
+#stateio=[]
+#statejup=[]
+#timess=barycentric_system_state_array[:,0]
 #for i, body in enumerate(bodies_to_propagate):
 #    if body == "Jupiter":
  ##       for t in times:
@@ -262,7 +266,7 @@ fig.suptitle('Evolution of Kepler elements of Io during the propagation.')
 semi_major_axis = keplerian_el.loc[:,"a"]
 ax2.plot(time_day, semi_major_axis)
 ax2.set_ylabel('Semi-major axis [m]')
-#ax2.set_ylim([410000*1e3, 430000*1e3])
+ax2.set_ylim([410000*1e3, 430000*1e3])
 
 
 #ECCENTRICITY
@@ -274,7 +278,7 @@ ax3.set_ylabel('Eccentricity [-]')
 inclination = np.rad2deg(keplerian_el.loc[:,"i"])
 ax4.plot(time_day, inclination)
 ax4.set_ylabel('inclination [deg]')
-#ax4.set_ylim(2.201, 2.203)
+ax4.set_ylim(2.201, 2.203)
 
 #RAAN
 raan = np.rad2deg(keplerian_el.loc[:,"RAAN"])
@@ -289,3 +293,4 @@ for ax in fig.get_axes():
     ax.autoscale_view()
 plt.tight_layout()
 plt.show()
+
