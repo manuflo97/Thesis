@@ -28,7 +28,7 @@ a=a';
 b=X\a;
 a1=X*b;
 
-m=(a1(end)-a1(1))/(Time(end)-Time(1))
+m=(a1(end)-a1(1))/(Time(end)-Time(1)) %slope of the blue line
 
 figure(1)
 plot(Time,a,'r')
