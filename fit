@@ -2,16 +2,15 @@ clear
 %clc
 format long
 
-out_sph = readtable('output_spherical.dat');
-%out_sph_tides = readtable('output_mutual_spherical_io22.dat');
+out_sph = readtable('output_spherical.dat'); %output_spherical_20 contains Jupiter sph harm of degree 2, order 0, while
+%output_spherical.dat has degree 2, order 2.
 %Convert into array
 out_sph=table2array(out_sph);
-%out_sph_tides=table2array(out_sph_tides);
 time=out_sph(1:1e6,1);
 %%
 i=1;
 while i<=length(time)
-    a(i)=out_sph(i,2);
+    a(i)=out_sph(i,2); %i,2 is the semi-major axis, i,3 is the eccentricity
     i=i+1;
 end
 [~,peaklocs] = findpeaks(a,time);%,'MinPeakDistance',1e7,'MinPeakHeight',4.05e4);
