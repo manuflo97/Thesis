@@ -14,12 +14,15 @@ from pandas import DataFrame
 # GENERAL SIMULATION SETUP #####################################################
 ################################################################################
 
+
     # Load spice kernels.
 spice.load_standard_kernels()
 
+    # Set simulation start epoch.
 simulation_start_epoch = 1.0e7
 
-simulation_end_epoch = 1.0e7 + 19.5 * constants.JULIAN_YEAR
+    # Set simulation end epoch.
+simulation_end_epoch = 1.0e7 + 25.0 * constants.JULIAN_YEAR
 
 ################################################################################
 # SETUP ENVIRONMENT ############################################################
@@ -32,20 +35,6 @@ bodies_to_create = ["Io","Jupiter"]
 global_frame_origin = "Jupiter"
 global_frame_orientation = "ECLIPJ2000"
 body_settings = environment_setup.get_default_body_settings(bodies_to_create,global_frame_origin,global_frame_orientation)
-
-# Create the gravity field settings for Earth with Spherical Harmonics from a triaxial ellipsoid
-#body_settings.get("Io").gravity_field_settings = environment_setup.gravity_field.spherical_harmonic_triaxial_body(
-#    axis_a=1830000,
-#    axis_b=1818700,
-#    axis_c=1815300,
-#    density=3528,
-#    maximum_degree=10,
-#    maximum_order=4,
-#    associated_reference_frame="IAU_Io")
-
-#body_settings.get("Io").rotation_model_settings = environment_setup.rotation_model.synchronous(
-#"Jupiter", global_frame_orientation, "Io_Fixed")
-
 body_system = environment_setup.create_system_of_bodies(body_settings)
 
 ################################################################################
@@ -55,15 +44,11 @@ bodies_to_propagate = ["Io"]
 central_bodies = ["Jupiter"]
 
 # Define accelerations acting on Io
-# Define tidal parameters
-love_number = 0.04
-time_lag = 0.08
 # Add entry to acceleration settings dict
 acceleration_settings_io = dict(
-    Jupiter = [propagation_setup.acceleration.mutual_spherical_harmonic_gravity(
-        0,0,
-        2,2
-    )])
+    Jupiter = [propagation_setup.acceleration.spherical_harmonic_gravity(2,0)
+               ])
+
 # Create global accelerations settings dictionary
 
 acceleration_settings = {"Io": acceleration_settings_io}
@@ -107,7 +92,7 @@ propagator_settings = propagation_setup.propagator.translational(
 #integrator_settings = propagation_setup.integrator.runge_kutta_4(simulation_start_epoch, fixed_step_size)
 
 integrator_settings = propagation_setup.integrator.runge_kutta_variable_step_size(
-    simulation_start_epoch,100,
+   simulation_start_epoch,100,
     tudatpy.kernel.numerical_simulation.propagation_setup.integrator.rkf_78,
     0.0000000001,180000,
     1e-15,1e-15,
@@ -131,20 +116,18 @@ states = dynamics_simulator.state_history
 dep_var = dynamics_simulator.dependent_variable_history
 states_array = result2array(states)
 
+
 ################################################################################
 # VISUALISATION  ################################
 ################################################################################
 from matplotlib import pyplot as plt
-from scipy.misc import electrocardiogram
-from scipy.signal import find_peaks
-
 
 def plot_multi_body_system_state_history(states_array, bodies_to_propagate):
     fig1 = plt.figure(figsize=(8, 6))
     ax1 = fig1.add_subplot(111, projection='3d')
     ax1.set_title(f'Trajectory of Io w.r.t Jupiter')
     ax1.scatter(0, 0, 0, marker='x', label="Jupiter", color='black')
-    ax1.plot(states_array[:, 1], states_array[:, 2], states_array[:, 3], label=bodies_to_propagate[0], linestyle='-')
+    ax1.plot(states_array[:, 1], states_array[:, 2], states_array[:, 3], label=bodies_to_propagate[0], linestyle='-.')
 
     ax1.legend()
     ax1.set_xlabel('x [m]')
@@ -165,59 +148,56 @@ df_array = pd.DataFrame(data=states_array)
 
 dep_var_array = result2array(dep_var)
 
-np.savetxt("output_mutual_spherical_io22.dat", dep_var_array)
-
+np.savetxt("output_spherical_20.dat", dep_var_array)
 
 time = dep_var_array[:,0]
 time_step = time-1.0e7
-time_hours = time_step / 3600
+time_day = time_step / (3600*24*365)
 
 dep_var_array = pd.DataFrame(data=dep_var_array, columns ="t a e i Argument_periapsis RAAN true_anomaly".split())
 
+
 fig, ((ax2, ax3), (ax4, ax5), (ax6, ax7)) = plt.subplots(3, 2, figsize=(9, 12))
-fig.suptitle('Evolution of Kepler elements of Io during the propagation with tides')
+fig.suptitle('Evolution of Kepler elements of Io during the propagation with spherical harmonics 10,4')
 
 #SEMI MAJOR AXIS
 semi_major_axis = dep_var_array.loc[:,"a"]
-#peaks, _ = find_peaks(semi_major_axis)
-#ax2.plot(time_hours,semi_major_axis)
-#ax2.plot(peaks, time_hours[peaks], "x")
-#ax2.plot(np.zeros_like(time_hours), "--", color="gray")
-ax2.plot(time_hours, semi_major_axis)
+ax2.plot(time_day, semi_major_axis)
 ax2.set_ylabel('Semi-major axis [m]')
 #ax2.set_ylim([410000*1e3, 430000*1e3])
 
 #ECCENTRICITY
 eccentricity = dep_var_array.loc[:,"e"]
-ax3.plot(time_hours, eccentricity)
+ax3.plot(time_day, eccentricity)
 ax3.set_ylabel('Eccentricity [-]')
 
 #INCLINATION
 inclination = np.rad2deg(dep_var_array.loc[:,"i"])
-ax4.plot(time_hours, inclination)
+ax4.plot(time_day, inclination)
 ax4.set_ylabel('inclination [deg]')
 #ax4.set_ylim(2.201, 2.203)
 
 #RAAN
 raan = np.rad2deg(dep_var_array.loc[:,"RAAN"])
-ax5.plot(time_hours, raan)
+ax5.plot(time_day, raan)
 ax5.set_ylabel('RAAN [deg]')
 
 #Argument of Pericenter
 argument_of_pericenter = np.rad2deg(dep_var_array.loc[:,"Argument_periapsis"])
-ax6.plot(time_hours, argument_of_pericenter)
+ax6.plot(time_day, argument_of_pericenter)
 ax6.set_ylabel("Argument of pericenter [deg]")
 
 #True Anomaly
 true_anomaly = np.rad2deg(dep_var_array.loc[:,"true_anomaly"])
-ax7.plot(time_hours, true_anomaly)
+ax7.plot(time_day, true_anomaly)
 ax7.set_ylabel("True anomaly [deg]")
 
 for ax in fig.get_axes():
-    ax.set_xlabel('Time [hr]')
-    ax.set_xlim([min(time_hours), max(time_hours)])
+    ax.set_xlabel('Time [Years]')
+    ax.set_xlim([min(time_day), max(time_day)])
     ax.grid()
     ax.relim()
     ax.autoscale_view()
 plt.tight_layout()
 plt.show()
+
