@@ -22,7 +22,7 @@ spice.load_standard_kernels()
 simulation_start_epoch = 1.0e7
 
     # Set simulation end epoch.
-simulation_end_epoch = 1.0e7 + 5.0 * constants.JULIAN_YEAR
+simulation_end_epoch = 1.0e7 + 25.0 * constants.JULIAN_YEAR
 
 ################################################################################
 # SETUP ENVIRONMENT ############################################################
@@ -32,7 +32,7 @@ simulation_end_epoch = 1.0e7 + 5.0 * constants.JULIAN_YEAR
 bodies_to_create = ["Io","Jupiter"]
 
     # Create bodies in simulation.
-global_frame_origin = "SSB"
+global_frame_origin = "Jupiter"
 global_frame_orientation = "ECLIPJ2000"
 body_settings = environment_setup.get_default_body_settings(bodies_to_create,global_frame_origin,global_frame_orientation)
 body_system = environment_setup.create_system_of_bodies(body_settings)
@@ -44,32 +44,27 @@ bodies_to_propagate = ["Io"]
 central_bodies = ["Jupiter"]
 
 # Define accelerations acting on Io
-# Define parameters
-love_number = 0.1
-time_lag = 100.0
+# Define tidal parameters
+love_number = 0.07
+time_lag_io = 486.5
+time_lag_jupiter = 0.10
 # Add entry to acceleration settings dict
-accelerations_settings_io={}
-accelerations_settings_io["Jupiter"] = [propagation_setup.acceleration.direct_tidal_dissipation_acceleration(
-   love_number,
-   time_lag,
-   False,
-   False)]
+acceleration_settings_io = dict(
+    Jupiter = [propagation_setup.acceleration.spherical_harmonic_gravity(2,0),
+               propagation_setup.acceleration.direct_tidal_dissipation_acceleration(love_number,time_lag_io,
+                                                                                    False, False),
+               propagation_setup.acceleration.direct_tidal_dissipation_acceleration(love_number, time_lag_jupiter,
+                                                                                     False, True)
+               ])
 
 # Create global accelerations settings dictionary
-acceleration_settings = {"Io": accelerations_settings_io}
+
+acceleration_settings = {"Io": acceleration_settings_io}
 
 # Create acceleration models
 acceleration_models = propagation_setup.create_acceleration_models(
-    body_system, acceleration_settings,  bodies_to_propagate, central_bodies)
-
-
-#acceleration_settings_io = dict(
-#    Jupiter = [propagation_setup.acceleration.direct_tidal_dissipation_acceleration(0.3,100,False,False)])
-#acceleration_settings = {"Io": acceleration_settings_io}
-
-#acceleration_models = propagation_setup.create_acceleration_models(
-#    body_system,acceleration_settings,bodies_to_propagate,central_bodies
-#)
+    body_system,acceleration_settings,bodies_to_propagate,central_bodies
+)
 
     ############################################################################
     # SETUP PROPAGATION : PROPAGATION SETTINGS #################################
@@ -99,17 +94,22 @@ propagator_settings = propagation_setup.propagator.translational(
     termination_condition,
     output_variables = dependent_variables_to_save
 )
+
     # Create numerical integrator settings.
-fixed_step_size = 100.0
+#fixed_step_size = 100.0
 #integrator_settings = propagation_setup.integrator.runge_kutta_4(simulation_start_epoch, fixed_step_size)
 
 integrator_settings = propagation_setup.integrator.runge_kutta_variable_step_size(
     simulation_start_epoch,100,
     tudatpy.kernel.numerical_simulation.propagation_setup.integrator.rkf_78,
-    0.001,18000000000,
-    1e-12,1e-12,
-    1,False,0.8,
-    4.0,0.1,True)
+   0.0000000001,180000,
+    1e-15,1e-15,
+    1,
+    False,
+    0.8,
+    4.0,
+    0.1,
+    True)
 
     ############################################################################
     # PROPAGATE ################################################################
@@ -123,7 +123,6 @@ dynamics_simulator = numerical_simulation.SingleArcSimulator(
 states = dynamics_simulator.state_history
 dep_var = dynamics_simulator.dependent_variable_history
 states_array = result2array(states)
-
 
 
 ################################################################################
@@ -159,54 +158,57 @@ df_array = pd.DataFrame(data=states_array)
 
 dep_var_array = result2array(dep_var)
 
+np.savetxt("output_spherical_Jupiter_and_tides.dat", dep_var_array)
+
 time = dep_var_array[:,0]
 time_step = time-1.0e7
-time_hours = time_step / 3600
+time_day = time_step / (3600*24*365)
 
-dep_var_array = pd.DataFrame(data=dep_var_array, columns ="t a e i RAAN Argument_periapsis true_anomaly".split())
+dep_var_array = pd.DataFrame(data=dep_var_array, columns ="t a e i Argument_periapsis RAAN true_anomaly".split())
 
 
 fig, ((ax2, ax3), (ax4, ax5), (ax6, ax7)) = plt.subplots(3, 2, figsize=(9, 12))
-fig.suptitle('Evolution of Kepler elements of Io during the propagation')
+fig.suptitle('Evolution of Kepler elements of Io during the propagation with tides and spherical harmonics 10,4')
 
 #SEMI MAJOR AXIS
 semi_major_axis = dep_var_array.loc[:,"a"]
-ax2.plot(time_hours, semi_major_axis)
+ax2.plot(time_day, semi_major_axis)
 ax2.set_ylabel('Semi-major axis [m]')
-ax2.set_ylim([410000*1e3, 430000*1e3])
+#ax2.set_ylim([410000*1e3, 430000*1e3])
 
 
 #ECCENTRICITY
 eccentricity = dep_var_array.loc[:,"e"]
-ax3.plot(time_hours, eccentricity)
+ax3.plot(time_day, eccentricity)
 ax3.set_ylabel('Eccentricity [-]')
 
 #INCLINATION
 inclination = np.rad2deg(dep_var_array.loc[:,"i"])
-ax4.plot(time_hours, inclination)
+ax4.plot(time_day, inclination)
 ax4.set_ylabel('inclination [deg]')
 #ax4.set_ylim(2.201, 2.203)
 
 #RAAN
 raan = np.rad2deg(dep_var_array.loc[:,"RAAN"])
-ax5.plot(time_hours, raan)
+ax5.plot(time_day, raan)
 ax5.set_ylabel('RAAN [deg]')
 
 #Argument of Pericenter
 argument_of_pericenter = np.rad2deg(dep_var_array.loc[:,"Argument_periapsis"])
-ax6.plot(time_hours, argument_of_pericenter)
+ax6.plot(time_day, argument_of_pericenter)
 ax6.set_ylabel("Argument of pericenter [deg]")
 
 #True Anomaly
 true_anomaly = np.rad2deg(dep_var_array.loc[:,"true_anomaly"])
-ax7.plot(time_hours, true_anomaly)
+ax7.plot(time_day, true_anomaly)
 ax7.set_ylabel("True anomaly [deg]")
 
 for ax in fig.get_axes():
-    ax.set_xlabel('Time [hr]')
-    ax.set_xlim([min(time_hours), max(time_hours)])
+    ax.set_xlabel('Time [Years]')
+    ax.set_xlim([min(time_day), max(time_day)])
     ax.grid()
     ax.relim()
     ax.autoscale_view()
 plt.tight_layout()
 plt.show()
+
