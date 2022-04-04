@@ -10,7 +10,7 @@ time=out_sph(1:1e6,1);
 %%
 i=1;
 while i<=length(time)
-    a(i)=out_sph(i,2);
+    a(i)=out_sph(i,2); % 2 is the semi-major axis, 3 is the eccentricity
     i=i+1;
 end
 
