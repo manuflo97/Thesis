@@ -21,7 +21,7 @@ spice.load_standard_kernels()
 simulation_start_epoch = 1.0e7
 
     # Set simulation end epoch.
-simulation_end_epoch = 1.0e7 + 10.0 * constants.JULIAN_YEAR
+simulation_end_epoch = 1.0e7 + 2.0 * constants.JULIAN_YEAR
 
 ################################################################################
 # SETUP ENVIRONMENT ############################################################
@@ -66,10 +66,10 @@ time_lag_jup = 0.104
 # Add entry to acceleration settings dict
 acceleration_settings_io = dict(
     Jupiter = [propagation_setup.acceleration.point_mass_gravity(),
-        #       propagation_setup.acceleration.direct_tidal_dissipation_acceleration(love_number_io,time_lag_io,
-        #                                                                       False, False), # Tide on satellite
+               propagation_setup.acceleration.direct_tidal_dissipation_acceleration(love_number_io,time_lag_io,
+                                                                             False, False), # Tide on satellite
                propagation_setup.acceleration.direct_tidal_dissipation_acceleration(love_number_jup, time_lag_jup,
-                                                                               False, True)  # Tide on planet
+                                                                             False, True)  # Tide on planet
                ])
 
 # Create global accelerations settings dictionary
@@ -168,19 +168,17 @@ time_day = time_step / (3600*24*365)
 dep_var_array = pd.DataFrame(data=dep_var_array, columns ="t a e i Argument_periapsis RAAN true_anomaly".split())
 
 fig, ((ax2, ax3), (ax4, ax5), (ax6, ax7)) = plt.subplots(3, 2, figsize=(9, 12))
-fig.suptitle('Kepler elements of Io during the propagation with tides on the planet, k2 = 0.7')
-
+fig.suptitle('Kepler elements of Io during the propagation with tides on the satellite, k2 = 0.7')
 
 eccentricity = dep_var_array.loc[:,"e"]
+#SEMI MAJOR AXIS
 semi_major_axis = dep_var_array.loc[:,"a"]
-
-#THEORETICAL BEHAVIOR
 c = 1.198e-17
 D = 7588.2
-dadt = 2/3*c*(1-7*D*(eccentricity[0])**2)*semi_major_axis[0] #da/dt taken from eq.7 Lari 2018
-dedt=-7/3*c*D*eccentricity[0] #de/dt Lari 2018
+#dadt = 2/3*c*(1-7*D*(eccentricity[0])**2)*semi_major_axis[0] # Planet + Satellite
+dadt = (2/3)*c*semi_major_axis[0] # Satellite
+#dadt = -14/3*c*D*semi_major_axis[0]*(eccentricity[0])**2 # Planet
 
-#SEMI MAJOR AXIS
 yacc=semi_major_axis[0] + dadt*time
 ax2.plot(time_day, semi_major_axis, 'r', label = "Simulation")
 ax2.plot(time_day, yacc, 'g', label = "Theoretical")
@@ -189,6 +187,7 @@ ax2.set_ylabel('Semi-major axis [m]')
 #ax2.set_ylim([410000*1e3, 430000*1e3])
 
 #ECCENTRICITY
+dedt=-7/3*c*D*eccentricity[0]
 yecc=eccentricity[0] + dedt*time
 ax3.plot(time_day, eccentricity,'r', label="Simulation")
 ax3.plot(time_day, yecc,'g', label="Theoretical")
