@@ -21,7 +21,7 @@ spice.load_standard_kernels()
 simulation_start_epoch = 1.0e7
 
     # Set simulation end epoch.
-simulation_end_epoch = 1.0e7 + 2.0 * constants.JULIAN_YEAR
+simulation_end_epoch = 1.0e7 + 10.0 * constants.JULIAN_YEAR
 
 ################################################################################
 # SETUP ENVIRONMENT ############################################################
@@ -36,18 +36,14 @@ global_frame_orientation = "ECLIPJ2000"
 body_settings = environment_setup.get_default_body_settings(bodies_to_create,global_frame_origin,global_frame_orientation)
 
 # Rotation model settings
-body_settings.get("Io").rotation_model_settings = environment_setup.rotation_model.synchronous(
-"Jupiter", global_frame_orientation, "Io_Fixed")
+#body_settings.get("Io").rotation_model_settings = environment_setup.rotation_model.synchronous(
+#"Jupiter", global_frame_orientation, "Io_Fixed")
 
 #Gravity settings
-body_settings.get("Io").gravity_field_settings = environment_setup.gravity_field.spherical_harmonic_triaxial_body(
-    axis_a=1830000,
-    axis_b=1818700,
-    axis_c=1815300,
-    density=3528,
-    maximum_degree=2,
-    maximum_order=2,
-    associated_reference_frame="IAU_Io")
+#body_settings.get("Io").gravity_field_settings = environment_setup.gravity_field.spherical_harmonic_triaxial_body(
+#    axis_a=1830000,  axis_b=1818700,  axis_c=1815300,
+#    density=3528,
+#    maximum_degree=2, maximum_order=2, associated_reference_frame="IAU_Io")
 
 body_system = environment_setup.create_system_of_bodies(body_settings)
 
@@ -111,9 +107,9 @@ propagator_settings = propagation_setup.propagator.translational(
 )
 
     # Create numerical integrator settings.
-integrator_settings = propagation_setup.integrator.runge_kutta_variable_step_size(simulation_start_epoch,200.0,
+integrator_settings = propagation_setup.integrator.runge_kutta_variable_step_size(simulation_start_epoch, 300.0,
     tudatpy.kernel.numerical_simulation.propagation_setup.integrator.rkf_78,
-   200.0, 200.0, 100000000.0, 100000000.0, 10, False, 0.8, 4.0, 0.1, True)
+   300.0, 300.0, 100000000.0, 100000000.0, 10, False, 0.8, 4.0, 0.1, True)
 
     ############################################################################
     # PROPAGATE ################################################################
@@ -167,53 +163,55 @@ time_day = time_step / (3600*24*365)
 
 dep_var_array = pd.DataFrame(data=dep_var_array, columns ="t a e i Argument_periapsis RAAN true_anomaly".split())
 
-fig, ((ax2, ax3), (ax4, ax5), (ax6, ax7)) = plt.subplots(3, 2, figsize=(9, 12))
-fig.suptitle('Kepler elements of Io during the propagation with tides on the satellite, k2 = 0.7')
+fig, (ax2, ax3) = plt.subplots(1, 2, figsize=(16, 8))
+fig.suptitle('Kepler elements of Io during the propagation with tides, k2 = 0.7')
 
+#THEORETICAL BEHAVIOR
 eccentricity = dep_var_array.loc[:,"e"]
-#SEMI MAJOR AXIS
 semi_major_axis = dep_var_array.loc[:,"a"]
 c = 1.198e-17
 D = 7588.2
-#dadt = 2/3*c*(1-7*D*(eccentricity[0])**2)*semi_major_axis[0] # Planet + Satellite
-dadt = (2/3)*c*semi_major_axis[0] # Satellite
-#dadt = -14/3*c*D*semi_major_axis[0]*(eccentricity[0])**2 # Planet
+dadt = 2/3*c*(1-7*D*(eccentricity[0])**2)*semi_major_axis[0] # Planet + Satellite
+#dadt = (2/3)*c*semi_major_axis[0] # Planet
+#dadt = -14/3*c*D*semi_major_axis[0]*(eccentricity[0])**2 # Satellite
+dedt=-7/3*c*D*eccentricity[0]
 
-yacc=semi_major_axis[0] + dadt*time
+#SEMI MAJOR AXIS
+yacc = semi_major_axis[0] + dadt*time
 ax2.plot(time_day, semi_major_axis, 'r', label = "Simulation")
-ax2.plot(time_day, yacc, 'g', label = "Theoretical")
+ax2.plot(time_day, yacc, 'g--', label = "Theoretical")
 ax2.legend(loc="upper left")
 ax2.set_ylabel('Semi-major axis [m]')
-#ax2.set_ylim([410000*1e3, 430000*1e3])
+ax2.set_ylim([4.22020296*1e8, 4.22020299*1e8])
 
 #ECCENTRICITY
-dedt=-7/3*c*D*eccentricity[0]
-yecc=eccentricity[0] + dedt*time
+yecc= eccentricity[0] + dedt*time
 ax3.plot(time_day, eccentricity,'r', label="Simulation")
-ax3.plot(time_day, yecc,'g', label="Theoretical")
+ax3.plot(time_day, yecc,'g--', label="Theoretical")
 ax3.set_ylabel('Eccentricity [-]')
 ax3.legend(loc="upper right")
+ax3.set_ylim([0.0036393, 0.003640])
 
 #INCLINATION
 inclination = np.rad2deg(dep_var_array.loc[:,"i"])
-ax4.plot(time_day, inclination)
-ax4.set_ylabel('inclination [deg]')
+#ax4.plot(time_day, inclination)
+#ax4.set_ylabel('inclination [deg]')
 #ax4.set_ylim(2.201, 2.203)
 
 #RAAN
 raan = np.rad2deg(dep_var_array.loc[:,"RAAN"])
-ax5.plot(time_day, raan)
-ax5.set_ylabel('RAAN [deg]')
+#ax5.plot(time_day, raan)
+#ax5.set_ylabel('RAAN [deg]')
 
 #Argument of Pericenter
-argument_of_pericenter = np.rad2deg(dep_var_array.loc[:,"Argument_periapsis"])
-ax6.plot(time_day, argument_of_pericenter)
-ax6.set_ylabel("Argument of pericenter [deg]")
+#argument_of_pericenter = np.rad2deg(dep_var_array.loc[:,"Argument_periapsis"])
+#ax6.plot(time_day, argument_of_pericenter)
+#ax6.set_ylabel("Argument of pericenter [deg]")
 
 #True Anomaly
-true_anomaly = np.rad2deg(dep_var_array.loc[:,"true_anomaly"])
-ax7.plot(time_day, true_anomaly)
-ax7.set_ylabel("True anomaly [deg]")
+#true_anomaly = np.rad2deg(dep_var_array.loc[:,"true_anomaly"])
+#ax7.plot(time_day, true_anomaly)
+#ax7.set_ylabel("True anomaly [deg]")
 
 for ax in fig.get_axes():
     ax.set_xlabel('Time [Years]')
