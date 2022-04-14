@@ -19,7 +19,7 @@ spice.load_standard_kernels()
 
 simulation_start_epoch = 1.0e7
 
-simulation_end_epoch = 1.0e7 + 5.0 * constants.JULIAN_YEAR
+simulation_end_epoch = 1.0e7 + 3.0 * constants.JULIAN_YEAR
 
 ################################################################################
 # SETUP ENVIRONMENT ############################################################
@@ -35,21 +35,22 @@ body_settings = environment_setup.get_default_body_settings(bodies_to_create,glo
 
 # Spherical harmonics variation in time
 gravity_field_variation_settings = list()
+tide_raising_body = "Jupiter"
 degree = 2
 love_number_Io = complex(0.7,0.1)
-#love_number_Jup = complex(0.379,0.1)
+love_number_Jup = complex(0.379,0.1)
 gravity_field_variation_settings.append(environment_setup.gravity_field_variation.solid_body_tide_complex_k(
-    "Jupiter",love_number_Io,degree))
+    tide_raising_body, love_number_Io, degree))
 body_settings.get("Io").gravity_field_variation_settings = gravity_field_variation_settings
 
 # Triaxiality of the body
-body_settings.get("Io").gravity_field_settings = environment_setup.gravity_field.spherical_harmonic_triaxial_body(
-    axis_a=1830000, axis_b=1818700, axis_c=1815300,
-    density=3528,  maximum_degree=2,  maximum_order=2,  associated_reference_frame="IAU_Io")
+#body_settings.get("Io").gravity_field_settings = environment_setup.gravity_field.spherical_harmonic_triaxial_body(
+#   axis_a=1830000, axis_b=1818700, axis_c=1815300,
+#    density=3528,  maximum_degree=2,  maximum_order=2,  associated_reference_frame="IAU_Io")
 
 # Rotation model
-body_settings.get("Io").rotation_model_settings = environment_setup.rotation_model.synchronous(
-"Jupiter", global_frame_orientation, "Io_Fixed")
+#body_settings.get("Io").rotation_model_settings = environment_setup.rotation_model.synchronous(
+#"Jupiter", global_frame_orientation, "Io_Fixed")
 
 body_system = environment_setup.create_system_of_bodies(body_settings)
 
@@ -153,7 +154,8 @@ df_array = pd.DataFrame(data=states_array)
 
 dep_var_array = result2array(dep_var)
 
-#np.savetxt("out_mutual_spherical_tides_complex.dat", dep_var_array)
+np.savetxt("out_mutual_spherical_tides_complex.dat", dep_var_array)
+#np.savetxt("out_mutual_spherical.dat", dep_var_array)
 
 time = dep_var_array[:,0]
 time_step = time-1.0e7
