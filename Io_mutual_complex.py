@@ -154,7 +154,7 @@ df_array = pd.DataFrame(data=states_array)
 
 dep_var_array = result2array(dep_var)
 
-np.savetxt("out_mutual_spherical_tides_complex.dat", dep_var_array)
+#np.savetxt("out_mutual_spherical_tides_complex.dat", dep_var_array)
 #np.savetxt("out_mutual_spherical.dat", dep_var_array)
 
 time = dep_var_array[:,0]
