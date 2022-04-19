@@ -29,19 +29,19 @@ simulation_end_epoch = 1.0e7 + 10.0 * constants.JULIAN_YEAR
 bodies_to_create = ["Io","Jupiter"]
 
     # Create bodies in simulation.
-global_frame_origin = "Jupiter"
+global_frame_origin = "SSB"
 global_frame_orientation = "ECLIPJ2000"
 body_settings = environment_setup.get_default_body_settings(bodies_to_create,global_frame_origin,global_frame_orientation)
 
 # Spherical harmonics variation in time
 gravity_field_variation_settings = list()
-tide_raising_body = "Io" # Put Jupiter for tide raised on Io
+tide_raising_body = "Jupiter"
 degree = 2
-love_number_Io = complex(0.7, -0.01)
-love_number_Jup = complex(0.379,-0.01)
+love_number_Io = complex(0.7, -0.015)
+love_number_Jup = complex(0.379,-1.102e-5)
 gravity_field_variation_settings.append(environment_setup.gravity_field_variation.solid_body_tide_complex_k(
-    tide_raising_body, love_number_Jup, degree)) #Put love_number_Io for tide raised on Io
-body_settings.get("Jupiter").gravity_field_variation_settings = gravity_field_variation_settings #Put Io for tide raised on Io
+   tide_raising_body, love_number_Io, degree))
+body_settings.get("Io").gravity_field_variation_settings = gravity_field_variation_settings
 
 # Triaxiality of the body
 #body_settings.get("Io").gravity_field_settings = environment_setup.gravity_field.spherical_harmonic_triaxial_body(
@@ -49,8 +49,8 @@ body_settings.get("Jupiter").gravity_field_variation_settings = gravity_field_va
 #    density=3528,  maximum_degree=2,  maximum_order=2,  associated_reference_frame="IAU_Io")
 
 # Rotation model
-#body_settings.get("Io").rotation_model_settings = environment_setup.rotation_model.synchronous(
-#"Jupiter", global_frame_orientation, "Io_Fixed")
+body_settings.get("Io").rotation_model_settings = environment_setup.rotation_model.synchronous(
+"Jupiter", global_frame_orientation, "Io_Fixed")
 
 body_system = environment_setup.create_system_of_bodies(body_settings)
 
@@ -65,7 +65,7 @@ central_bodies = ["Jupiter"]
 acceleration_settings_io = dict(
     Jupiter = [propagation_setup.acceleration.mutual_spherical_harmonic_gravity(
         2,2,
-        2,2,
+        2,2
     )])
 # Create global accelerations settings dictionary
 
@@ -154,7 +154,7 @@ df_array = pd.DataFrame(data=states_array)
 
 dep_var_array = result2array(dep_var)
 
-np.savetxt("out_mutual_spherical_tides_complex.dat", dep_var_array)
+np.savetxt("out_mutual_spherical_tidessat_complex_.dat", dep_var_array)
 #np.savetxt("out_mutual_spherical.dat", dep_var_array)
 
 time = dep_var_array[:,0]
