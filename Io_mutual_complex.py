@@ -41,7 +41,7 @@ love_number_Io = complex(0.7, -0.01)
 love_number_Jup = complex(0.379,-0.01)
 gravity_field_variation_settings.append(environment_setup.gravity_field_variation.solid_body_tide_complex_k(
     tide_raising_body, love_number_Io, degree)) #Put love_number_Io for tide raised on Io
-body_settings.get("Io").gravity_field_variation_settings = gravity_field_variation_settings #Put Jupiter for tide raised on Jupiter
+body_settings.get("Jupiter").gravity_field_variation_settings = gravity_field_variation_settings #Put Jupiter for tide raised on Io
 
 # Triaxiality of the body
 #body_settings.get("Io").gravity_field_settings = environment_setup.gravity_field.spherical_harmonic_triaxial_body(
