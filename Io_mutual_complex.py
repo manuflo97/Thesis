@@ -35,12 +35,12 @@ body_settings = environment_setup.get_default_body_settings(bodies_to_create,glo
 
 # Spherical harmonics variation in time
 gravity_field_variation_settings = list()
-tide_raising_body = "Jupiter" # Put Io for tide raised on Jupiter
+tide_raising_body = "Io" # Put Jupiter for tide raised on Io
 degree = 2
-love_number_Io = complex(0.7, 0.01)
+love_number_Io = complex(0.7, -0.01)
 love_number_Jup = complex(0.379,-0.01)
 gravity_field_variation_settings.append(environment_setup.gravity_field_variation.solid_body_tide_complex_k(
-    tide_raising_body, love_number_Io, degree)) #Put love_number_Jup for tide raised on Jupiter
+    tide_raising_body, love_number_Io, degree)) #Put love_number_Io for tide raised on Io
 body_settings.get("Io").gravity_field_variation_settings = gravity_field_variation_settings #Put Jupiter for tide raised on Jupiter
 
 # Triaxiality of the body
