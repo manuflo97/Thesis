@@ -19,7 +19,7 @@ spice.load_standard_kernels()
 
 simulation_start_epoch = 1.0e7
 
-simulation_end_epoch = 1.0e7 + 3.0 * constants.JULIAN_YEAR
+simulation_end_epoch = 1.0e7 + 10.0 * constants.JULIAN_YEAR
 
 ################################################################################
 # SETUP ENVIRONMENT ############################################################
@@ -38,7 +38,7 @@ gravity_field_variation_settings = list()
 tide_raising_body = "Jupiter" # Put Io for tide raised on Jupiter
 degree = 2
 love_number_Io = complex(0.7, 0.01)
-love_number_Jup = complex(0.379,-0.1)
+love_number_Jup = complex(0.379,-0.01)
 gravity_field_variation_settings.append(environment_setup.gravity_field_variation.solid_body_tide_complex_k(
     tide_raising_body, love_number_Io, degree)) #Put love_number_Jup for tide raised on Jupiter
 body_settings.get("Io").gravity_field_variation_settings = gravity_field_variation_settings #Put Jupiter for tide raised on Jupiter
