@@ -37,8 +37,8 @@ body_settings = environment_setup.get_default_body_settings(bodies_to_create,glo
 gravity_field_variation_settings = list()
 tide_raising_body = "Jupiter"
 degree = 2
-love_number_Io = complex(0.7,0.1)
-love_number_Jup = complex(0.379,0.1)
+love_number_Io = complex(0.7, 0.01)
+love_number_Jup = complex(0.379,-0.1)
 gravity_field_variation_settings.append(environment_setup.gravity_field_variation.solid_body_tide_complex_k(
     tide_raising_body, love_number_Io, degree))
 body_settings.get("Io").gravity_field_variation_settings = gravity_field_variation_settings
@@ -65,7 +65,7 @@ central_bodies = ["Jupiter"]
 acceleration_settings_io = dict(
     Jupiter = [propagation_setup.acceleration.mutual_spherical_harmonic_gravity(
         2,2,
-        2,2
+        2,2,
     )])
 # Create global accelerations settings dictionary
 
@@ -154,7 +154,7 @@ df_array = pd.DataFrame(data=states_array)
 
 dep_var_array = result2array(dep_var)
 
-#np.savetxt("out_mutual_spherical_tides_complex.dat", dep_var_array)
+np.savetxt("out_mutual_spherical_tides_complex.dat", dep_var_array)
 #np.savetxt("out_mutual_spherical.dat", dep_var_array)
 
 time = dep_var_array[:,0]
