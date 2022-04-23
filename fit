@@ -1,39 +1,39 @@
 clear all
-%clc
+clc
 format long
 
-out_sph = readtable('output_spherical_Jupiter_and_tides.dat');
-%out_sph = readtable('output_spherical_20.dat');
+out_sph = readtable('out_mutual_spherical.dat');
+out_sph_tides = readtable('out_mutual_spherical_tidessat_complex.dat');
 %Convert into array
 out_sph=table2array(out_sph);
-time=out_sph(1:1e6,1);
+out_sph_tides=table2array(out_sph_tides);
+time=out_sph(:,1);
 %%
 i=1;
 while i<=length(time)
-    a(i)=out_sph(i,2); % 2 is the semi-major axis, 3 is the eccentricity
+    a(i)=out_sph_tides(i,2)-out_sph(i,2);
     i=i+1;
 end
-
-[~,peaklocs] = findpeaks(a,time);
+[~,peaklocs] = findpeaks(a,time);%,'MinPeakDistance',1e7,'MinPeakHeight',4e4);
 period=mean(diff(peaklocs));
 
-n=1; Time=[];
-while time(n)<=(time(1)+period*800)
-    Time=[Time;time(n)];
-    n=n+1;
-end
+%n=1; Time=[];
+% while time(n)<=(time(1)+period*2)
+%     Time=[Time;time(n)];
+%     n=n+1;
+% end
 %%
-X = [ones(length(Time),1),Time];
-a=a(1:n-1);
+X = [ones(length(time),1),time];
+%a=a(1:n-1);
 a=a';
 b=X\a;
 a1=X*b;
 
-m=(a1(end)-a1(1))/(Time(end)-Time(1)) %Slope of the line
-
 figure(1)
-plot(Time,a,'r')
+%subplot(2,2,1)
+plot(time,a,'r')
 hold on
-plot(Time,a1,'b')
-title("Semi-major axis")
+plot(time,a1,'b')
 grid on
+title('Semi-major axis change due to tide raised on Io with synchronous rotation model')
+%ylabel('[m]')
