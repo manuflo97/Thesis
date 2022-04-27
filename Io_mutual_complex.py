@@ -5,6 +5,8 @@ from tudatpy.kernel import constants
 from tudatpy.kernel import numerical_simulation
 from tudatpy.kernel.interface import spice
 from tudatpy.kernel.numerical_simulation import environment_setup
+from tudatpy.kernel.numerical_simulation import environment
+from tudatpy import bodies
 from tudatpy.kernel.numerical_simulation import propagation_setup, propagation
 import numpy as np
 import json
@@ -19,7 +21,7 @@ spice.load_standard_kernels()
 
 simulation_start_epoch = 1.0e7
 
-simulation_end_epoch = 1.0e7 + 10.0 * constants.JULIAN_YEAR
+simulation_end_epoch = 1.0e7 + 0.01 * constants.JULIAN_YEAR
 
 ################################################################################
 # SETUP ENVIRONMENT ############################################################
@@ -29,7 +31,7 @@ simulation_end_epoch = 1.0e7 + 10.0 * constants.JULIAN_YEAR
 bodies_to_create = ["Io","Jupiter"]
 
     # Create bodies in simulation.
-global_frame_origin = "SSB"
+global_frame_origin = "Jupiter"
 global_frame_orientation = "ECLIPJ2000"
 body_settings = environment_setup.get_default_body_settings(bodies_to_create,global_frame_origin,global_frame_orientation)
 
@@ -43,14 +45,15 @@ gravity_field_variation_settings.append(environment_setup.gravity_field_variatio
    tide_raising_body, love_number_Io, degree))
 body_settings.get("Io").gravity_field_variation_settings = gravity_field_variation_settings
 
-# Triaxiality of the body
-#body_settings.get("Io").gravity_field_settings = environment_setup.gravity_field.spherical_harmonic_triaxial_body(
-#   axis_a=1830000, axis_b=1818700, axis_c=1815300,
-#    density=3528,  maximum_degree=2,  maximum_order=2,  associated_reference_frame="IAU_Io")
-
 # Rotation model
 body_settings.get("Io").rotation_model_settings = environment_setup.rotation_model.synchronous(
 "Jupiter", global_frame_orientation, "Io_Fixed")
+
+# Librations
+scaled_libration_amplitude = 1.0
+libration_calculator = environment.DirectLongitudeLibrationCalculator(scaled_libration_amplitude)
+bodies.get('Io').rotation_model.libration_calculator = libration_calculator
+#body_settings.get('Io').rotation_model.libration_calculator = libration_calculator
 
 body_system = environment_setup.create_system_of_bodies(body_settings)
 
@@ -64,7 +67,7 @@ central_bodies = ["Jupiter"]
 # Add entry to acceleration settings dict
 acceleration_settings_io = dict(
     Jupiter = [propagation_setup.acceleration.mutual_spherical_harmonic_gravity(
-        2,2,
+        2,0,
         2,2
     )])
 # Create global accelerations settings dictionary
@@ -154,7 +157,7 @@ df_array = pd.DataFrame(data=states_array)
 
 dep_var_array = result2array(dep_var)
 
-np.savetxt("out_mutual_spherical_tidessat_complex_.dat", dep_var_array)
+np.savetxt("out_mutual_spherical_tidessat_complex.dat", dep_var_array)
 #np.savetxt("out_mutual_spherical.dat", dep_var_array)
 
 time = dep_var_array[:,0]
@@ -164,7 +167,7 @@ time_day = time_step / (3600*24*365)
 dep_var_array = pd.DataFrame(data=dep_var_array, columns ="t a e i Argument_periapsis RAAN true_anomaly".split())
 
 fig, ((ax2, ax3), (ax4, ax5), (ax6, ax7)) = plt.subplots(3, 2, figsize=(9, 12))
-fig.suptitle('Evolution of Kepler elements of Io during the propagation with tides')
+fig.suptitle('Evolution of Kepler elements of Io during the propagation without tides')
 
 #SEMI MAJOR AXIS
 semi_major_axis = dep_var_array.loc[:,"a"]
