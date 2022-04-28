@@ -52,7 +52,7 @@ body_settings.get("Io").rotation_model_settings = environment_setup.rotation_mod
 body_system = environment_setup.create_system_of_bodies(body_settings)
 
 # Librations
-scaled_libration_amplitude = 100.0#1.378e-4
+scaled_libration_amplitude = 1.0#1.378e-4
 libration_calculator = environment.DirectLongitudeLibrationCalculator(scaled_libration_amplitude)
 body_system.get("Io").rotation_model.libration_calculator = libration_calculator
 
