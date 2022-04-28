@@ -52,7 +52,7 @@ body_settings.get("Io").rotation_model_settings = environment_setup.rotation_mod
 body_system = environment_setup.create_system_of_bodies(body_settings)
 
 # Librations
-scaled_libration_amplitude = 1000.0#1.378e-4
+scaled_libration_amplitude = 100.0#1.378e-4
 libration_calculator = environment.DirectLongitudeLibrationCalculator(scaled_libration_amplitude)
 body_system.get("Io").rotation_model.libration_calculator = libration_calculator
 
@@ -94,8 +94,8 @@ termination_condition = propagation_setup.propagator.time_termination(simulation
     #create dependent variables
 dependent_variables_to_save = [
     propagation_setup.dependent_variable.keplerian_state("Io","Jupiter"),
-    propagation_setup.dependent_variable.latitude("Io","Jupiter"),
-    propagation_setup.dependent_variable.longitude("Io","Jupiter")
+    propagation_setup.dependent_variable.latitude("Jupiter","Io"),
+    propagation_setup.dependent_variable.longitude("Jupiter","Io")
 ]
 
     # Create propagation settings.
@@ -212,7 +212,7 @@ plt.tight_layout()
 #plt.show()
 
 fig2, (ax8, ax9) = plt.subplots(1, 2, figsize=(16, 8))
-fig2.suptitle('Latitude and longitude of Io during the propagation')
+fig2.suptitle('Latitude and longitude of Io with librations')
 
 latitude = dep_var_array.loc[:,"Lat"]
 longitude = dep_var_array.loc[:,"Lon"]
