@@ -21,7 +21,7 @@ spice.load_standard_kernels()
 
 simulation_start_epoch = 1.0e7
 
-simulation_end_epoch = 1.0e7 + 0.01 * constants.JULIAN_YEAR
+simulation_end_epoch = 1.0e7 + 1.0 * constants.JULIAN_YEAR
 
 ################################################################################
 # SETUP ENVIRONMENT ############################################################
@@ -31,7 +31,7 @@ simulation_end_epoch = 1.0e7 + 0.01 * constants.JULIAN_YEAR
 bodies_to_create = ["Io","Jupiter"]
 
     # Create bodies in simulation.
-global_frame_origin = "Jupiter"
+global_frame_origin = "SSB"
 global_frame_orientation = "ECLIPJ2000"
 body_settings = environment_setup.get_default_body_settings(bodies_to_create,global_frame_origin,global_frame_orientation)
 
@@ -40,7 +40,7 @@ gravity_field_variation_settings = list()
 tide_raising_body = "Jupiter"
 degree = 2
 love_number_Io = complex(0.7, -0.015)
-love_number_Jup = complex(0.379,-1.102e-5)
+love_number_Jup = complex(0.379, -1.102e-5)
 gravity_field_variation_settings.append(environment_setup.gravity_field_variation.solid_body_tide_complex_k(
    tide_raising_body, love_number_Io, degree))
 body_settings.get("Io").gravity_field_variation_settings = gravity_field_variation_settings
@@ -49,13 +49,12 @@ body_settings.get("Io").gravity_field_variation_settings = gravity_field_variati
 body_settings.get("Io").rotation_model_settings = environment_setup.rotation_model.synchronous(
 "Jupiter", global_frame_orientation, "Io_Fixed")
 
-# Librations
-scaled_libration_amplitude = 1.0
-libration_calculator = environment.DirectLongitudeLibrationCalculator(scaled_libration_amplitude)
-bodies.get('Io').rotation_model.libration_calculator = libration_calculator
-#body_settings.get('Io').rotation_model.libration_calculator = libration_calculator
-
 body_system = environment_setup.create_system_of_bodies(body_settings)
+
+# Librations
+scaled_libration_amplitude = 1000.0#1.378e-4
+libration_calculator = environment.DirectLongitudeLibrationCalculator(scaled_libration_amplitude)
+body_system.get("Io").rotation_model.libration_calculator = libration_calculator
 
 ################################################################################
 # SETUP PROPAGATION ############################################################
@@ -63,13 +62,13 @@ body_system = environment_setup.create_system_of_bodies(body_settings)
 bodies_to_propagate = ["Io"]
 central_bodies = ["Jupiter"]
 
-# Define accelerations acting on Io
+# Define accelerations acting on the moons
 # Add entry to acceleration settings dict
 acceleration_settings_io = dict(
     Jupiter = [propagation_setup.acceleration.mutual_spherical_harmonic_gravity(
         2,0,
-        2,2
-    )])
+        2,2)]
+    )
 # Create global accelerations settings dictionary
 
 acceleration_settings = {"Io": acceleration_settings_io}
@@ -94,7 +93,9 @@ termination_condition = propagation_setup.propagator.time_termination(simulation
 
     #create dependent variables
 dependent_variables_to_save = [
-    propagation_setup.dependent_variable.keplerian_state("Io","Jupiter")
+    propagation_setup.dependent_variable.keplerian_state("Io","Jupiter"),
+    propagation_setup.dependent_variable.latitude("Io","Jupiter"),
+    propagation_setup.dependent_variable.longitude("Io","Jupiter")
 ]
 
     # Create propagation settings.
@@ -157,14 +158,14 @@ df_array = pd.DataFrame(data=states_array)
 
 dep_var_array = result2array(dep_var)
 
-np.savetxt("out_mutual_spherical_tidessat_complex.dat", dep_var_array)
+np.savetxt("out_mutual_spherical_tidessat_complex_lib.dat", dep_var_array)
 #np.savetxt("out_mutual_spherical.dat", dep_var_array)
 
 time = dep_var_array[:,0]
 time_step = time-1.0e7
 time_day = time_step / (3600*24*365)
 
-dep_var_array = pd.DataFrame(data=dep_var_array, columns ="t a e i Argument_periapsis RAAN true_anomaly".split())
+dep_var_array = pd.DataFrame(data=dep_var_array, columns ="t a e i Argument_periapsis RAAN true_anomaly Lat Lon".split())
 
 fig, ((ax2, ax3), (ax4, ax5), (ax6, ax7)) = plt.subplots(3, 2, figsize=(9, 12))
 fig.suptitle('Evolution of Kepler elements of Io during the propagation without tides')
@@ -202,6 +203,29 @@ ax7.plot(time_day, true_anomaly)
 ax7.set_ylabel("True anomaly [deg]")
 
 for ax in fig.get_axes():
+    ax.set_xlabel('Time [years]')
+    ax.set_xlim([min(time_day), max(time_day)])
+    ax.grid()
+    ax.relim()
+    ax.autoscale_view()
+plt.tight_layout()
+#plt.show()
+
+fig2, (ax8, ax9) = plt.subplots(1, 2, figsize=(16, 8))
+fig2.suptitle('Latitude and longitude of Io during the propagation')
+
+latitude = dep_var_array.loc[:,"Lat"]
+longitude = dep_var_array.loc[:,"Lon"]
+
+#LATITUDE
+ax8.plot(time_day, latitude,'r')
+ax8.set_ylabel('Latitude')
+
+#LONGITUDE
+ax9.plot(time_day, longitude, 'b')
+ax9.set_ylabel('Longitude')
+
+for ax in fig2.get_axes():
     ax.set_xlabel('Time [years]')
     ax.set_xlim([min(time_day), max(time_day)])
     ax.grid()
