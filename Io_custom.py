@@ -52,14 +52,12 @@ normalized_cosine_coefficients = [
     [0,                   0,                   0,                   0],
     [0,                   0,                   0,                   0],
     [0,                   0,                   0,                   0]]
-
 normalized_sine_coefficients = [
     [0,                   0,                   0,                   0],
     [0,                   0,                   0,                   0],
     [0,                   0,                   0,                   0],
     [0,                   0,                   0,                   0]]
-gravity_field_settings.append(environment_setup.gravity_field.SphericalHarmonicsGravityFieldSettings(
-    "Io", True, 5.958e12, normalized_cosine_coefficients, normalized_sine_coefficients))
+gravity_field_settings.append(environment.SphericalHarmonicsGravityField.cosine_coefficients(normalized_cosine_coefficients))
 body_settings.get("Io").gravity_field_settings = gravity_field_settings
 
 # Rotation model
