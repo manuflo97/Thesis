@@ -12,26 +12,27 @@ import numpy as np
 import json
 import pandas as pd
 from pandas import DataFrame
+
 ################################################################################
 # GENERAL SIMULATION SETUP #####################################################
 ################################################################################
 
-    # Load spice kernels.
+# Load spice kernels.
 spice.load_standard_kernels()
 
 simulation_start_epoch = 1.0e7
 
-simulation_end_epoch = 1.0e7 + 0.1 * constants.JULIAN_YEAR
+simulation_end_epoch = 1.0e7 + 1.5 * constants.JULIAN_YEAR
 
 ################################################################################
 # SETUP ENVIRONMENT ############################################################
 ################################################################################
 
-    # Define bodies in simulation.
+# Define bodies in simulation.
 bodies_to_create = ["Io","Jupiter"]
 
-    # Create bodies in simulation.
-global_frame_origin = "SSB"
+# Create bodies in simulation.
+global_frame_origin = "Jupiter"
 global_frame_orientation = "ECLIPJ2000"
 body_settings = environment_setup.get_default_body_settings(bodies_to_create,global_frame_origin,global_frame_orientation)
 
@@ -46,19 +47,19 @@ gravity_field_variation_settings.append(environment_setup.gravity_field_variatio
 #body_settings.get("Io").gravity_field_variation_settings = gravity_field_variation_settings
 
 #Change gravity field settings
-gravity_field_settings = list()
-normalized_cosine_coefficients = [
-    [1,                   0,                   0,                   0],
-    [0,                   0,                   0,                   0],
-    [0,                   0,                   0,                   0],
-    [0,                   0,                   0,                   0]]
-normalized_sine_coefficients = [
-    [0,                   0,                   0,                   0],
-    [0,                   0,                   0,                   0],
-    [0,                   0,                   0,                   0],
-    [0,                   0,                   0,                   0]]
-gravity_field_settings.append(environment.SphericalHarmonicsGravityField.cosine_coefficients(normalized_cosine_coefficients))
-body_settings.get("Io").gravity_field_settings = gravity_field_settings
+sine_coefficients = [
+    [0,                   0,                   0], #[degree 0]
+    [0,                   0,                   0], #[10, 11, 12]
+    [0,                   0,                   0]] #[21, 21, 22]
+cosine_coefficients = [
+    [1,                   0,                   0],
+    [0,                   0,                   0],
+    [0,                   0,                   0]]
+
+body_settings.get("Io").gravity_field_settings.normalized_cosine_coefficients = cosine_coefficients
+body_settings.get("Io").gravity_field_settings.normalized_sine_coefficients = sine_coefficients
+body_settings.get("Jupiter").gravity_field_settings.normalized_cosine_coefficients = cosine_coefficients
+body_settings.get("Jupiter").gravity_field_settings.normalized_sine_coefficients = sine_coefficients
 
 # Rotation model
 initial_orientation = np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1]])
@@ -86,7 +87,7 @@ central_bodies = ["Jupiter"]
 # Add entry to acceleration settings dict
 acceleration_settings_io = dict(
     Jupiter = [propagation_setup.acceleration.mutual_spherical_harmonic_gravity(
-        2,0,
+        2,2,
         2,2)]
     )
 # Create global accelerations settings dictionary
@@ -101,17 +102,17 @@ acceleration_models = propagation_setup.create_acceleration_models(
     # SETUP PROPAGATION : PROPAGATION SETTINGS #################################
     ############################################################################
 
-    # Get system initial state.
+# Get system initial state.
 system_initial_state = propagation.get_initial_state_of_bodies(
     bodies_to_propagate=bodies_to_propagate,
     central_bodies=central_bodies,
     body_system=body_system,
     initial_time=simulation_start_epoch,
 )
-    # Create termination settings.
+# Create termination settings.
 termination_condition = propagation_setup.propagator.time_termination(simulation_end_epoch)
 
-    #create dependent variables
+#create dependent variables
 dependent_variables_to_save = [
     propagation_setup.dependent_variable.keplerian_state("Io","Jupiter"),
     propagation_setup.dependent_variable.latitude("Jupiter","Io"),
@@ -128,8 +129,7 @@ propagator_settings = propagation_setup.propagator.translational(
     output_variables = dependent_variables_to_save
 )
 
-    # Create numerical integrator settings.
-
+# Create numerical integrator settings
 integrator_settings = propagation_setup.integrator.runge_kutta_variable_step_size(simulation_start_epoch,300.0,
     tudatpy.kernel.numerical_simulation.propagation_setup.integrator.rkf_78,
    300.0, 300.0, 100000000.0, 100000000.0, 10, False, 0.8, 4.0, 0.1, True)
