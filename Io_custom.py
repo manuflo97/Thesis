@@ -9,6 +9,7 @@ from tudatpy.kernel.numerical_simulation import environment
 from tudatpy import bodies
 from tudatpy.kernel.numerical_simulation import propagation_setup, propagation
 import numpy as np
+from tudatpy.kernel.astro import frame_conversion, element_conversion
 import json
 import pandas as pd
 from pandas import DataFrame
@@ -22,7 +23,7 @@ spice.load_standard_kernels()
 
 simulation_start_epoch = 1.0e7
 
-simulation_end_epoch = 1.0e7 + 1.5 * constants.JULIAN_YEAR
+simulation_end_epoch = simulation_start_epoch + 1.77 * constants.JULIAN_DAY
 
 ################################################################################
 # SETUP ENVIRONMENT ############################################################
@@ -35,6 +36,19 @@ bodies_to_create = ["Io","Jupiter"]
 global_frame_origin = "Jupiter"
 global_frame_orientation = "ECLIPJ2000"
 body_settings = environment_setup.get_default_body_settings(bodies_to_create,global_frame_origin,global_frame_orientation)
+body_system = environment_setup.create_system_of_bodies(body_settings)
+
+#Initial state
+initial_cartesian_state=get_state_of_bodies(["Io"], ["Jupiter"], body_system, simulation_start_epoch)
+initial_keplerian_state=element_conversion.cartesian_to_keplerian(initial_cartesian_state, 1.266865349e17)
+theta0=initial_keplerian_state[5]
+e0=initial_keplerian_state[1]
+
+#Mean anomaly
+E=np.arcsin((np.sqrt(1-e0**2)*np.sin(theta0))/(1+np.cos(theta0)))
+M=E-e0*np.sin(E)
+print(M)
+print(theta0)
 
 # Spherical harmonics variation in time
 gravity_field_variation_settings = list()
@@ -62,18 +76,17 @@ body_settings.get("Jupiter").gravity_field_settings.normalized_cosine_coefficien
 body_settings.get("Jupiter").gravity_field_settings.normalized_sine_coefficients = sine_coefficients
 
 # Rotation model
-initial_orientation = np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1]])
-initial_time = simulation_start_epoch
+initial_orientation = frame_conversion.inertial_to_rsw_rotation_matrix(initial_cartesian_state)
 rotation_rate = 4.1106e-5
 original_frame = global_frame_orientation
-target_frame = "Io"
+target_frame = "IAU_Io"
 #body_settings.get("Io").rotation_model_settings = environment_setup.rotation_model.simple(
-#    original_frame, target_frame, initial_orientation, initial_time, rotation_rate)
+#    original_frame, target_frame, initial_orientation, simulation_start_epoch, rotation_rate)
 
 body_system = environment_setup.create_system_of_bodies(body_settings)
 
 # Librations
-scaled_libration_amplitude = 500.0 #1.378e-4
+scaled_libration_amplitude = 500.0
 libration_calculator = environment.DirectLongitudeLibrationCalculator(scaled_libration_amplitude)
 #body_system.get("Io").rotation_model.libration_calculator = libration_calculator
 
@@ -109,17 +122,19 @@ system_initial_state = propagation.get_initial_state_of_bodies(
     body_system=body_system,
     initial_time=simulation_start_epoch,
 )
+
 # Create termination settings.
 termination_condition = propagation_setup.propagator.time_termination(simulation_end_epoch)
 
-#create dependent variables
+# Create dependent variables
 dependent_variables_to_save = [
     propagation_setup.dependent_variable.keplerian_state("Io","Jupiter"),
     propagation_setup.dependent_variable.latitude("Jupiter","Io"),
-    propagation_setup.dependent_variable.longitude("Jupiter","Io")
+    propagation_setup.dependent_variable.longitude("Jupiter","Io"),
+    propagation_setup.dependent_variable.total_acceleration("Io")
 ]
 
-    # Create propagation settings.
+# Create propagation settings.
 propagator_settings = propagation_setup.propagator.translational(
     central_bodies,
     acceleration_models,
@@ -138,11 +153,11 @@ integrator_settings = propagation_setup.integrator.runge_kutta_variable_step_siz
     # PROPAGATE ################################################################
     ############################################################################
 
-    # Instantiate the dynamics simulator.
+# Instantiate the dynamics simulator.
 dynamics_simulator = numerical_simulation.SingleArcSimulator(
     body_system, integrator_settings, propagator_settings)
 
-    # Propagate and store results
+# Propagate and store results
 states = dynamics_simulator.state_history
 dep_var = dynamics_simulator.dependent_variable_history
 states_array = result2array(states)
@@ -178,6 +193,9 @@ df_array = pd.DataFrame(data=states_array)
 
 dep_var_array = result2array(dep_var)
 
+total_acceleration_norm = np.linalg.norm(dep_var_array[:,9:12], axis=1)
+
+#np.savetxt("Acceleration.dat",total_acceleration_norm)
 #np.savetxt("out_mutual_spherical_tidessat.dat", dep_var_array)
 #np.savetxt("out_mutual_spherical.dat", dep_var_array)
 
@@ -185,10 +203,10 @@ time = dep_var_array[:,0]
 time_step = time-1.0e7
 time_day = time_step / (3600*24*365)
 
-dep_var_array = pd.DataFrame(data=dep_var_array, columns ="t a e i Argument_periapsis RAAN true_anomaly Lat Lon".split())
+dep_var_array = pd.DataFrame(data=dep_var_array, columns ="t a e i Argument_periapsis RAAN true_anomaly Lat Lon ax ay az".split())
 
 fig, ((ax2, ax3), (ax4, ax5), (ax6, ax7)) = plt.subplots(3, 2, figsize=(9, 12))
-fig.suptitle('Evolution of Kepler elements of Io during the propagation without tides')
+fig.suptitle('Evolution of Kepler elements of Io during the propagation')
 
 #SEMI MAJOR AXIS
 semi_major_axis = dep_var_array.loc[:,"a"]
@@ -232,18 +250,18 @@ plt.tight_layout()
 #plt.show()
 
 fig2, (ax8, ax9) = plt.subplots(1, 2, figsize=(16, 8))
-fig2.suptitle('Latitude and longitude of Io with librations')
+fig2.suptitle('Latitude and longitude of Io')
 
-latitude = dep_var_array.loc[:,"Lat"]
-longitude = dep_var_array.loc[:,"Lon"]
+latitude = np.rad2deg(dep_var_array.loc[:,"Lat"])
+longitude = np.rad2deg(dep_var_array.loc[:,"Lon"])
 
 #LATITUDE
 ax8.plot(time_day, latitude,'r')
-ax8.set_ylabel('Latitude')
+ax8.set_ylabel('Latitude [°]')
 
 #LONGITUDE
 ax9.plot(time_day, longitude, 'b')
-ax9.set_ylabel('Longitude')
+ax9.set_ylabel('Longitude [°]')
 
 for ax in fig2.get_axes():
     ax.set_xlabel('Time [years]')
@@ -252,4 +270,15 @@ for ax in fig2.get_axes():
     ax.relim()
     ax.autoscale_view()
 plt.tight_layout()
-plt.show()
+#plt.show()
+
+# Plot total acceleration as function of time
+plt.figure(figsize=(9, 5))
+plt.title("Total acceleration norm on Io")
+plt.plot(time_day, total_acceleration_norm)
+plt.xlabel('Time [years]')
+plt.ylabel('Total Acceleration [m/s$^2$]')
+plt.xlim([min(time_day), max(time_day)])
+plt.grid()
+plt.tight_layout()
+#plt.show()
