@@ -91,8 +91,8 @@ initial_orientation=np.dot(RSW_matrix,rotation_matrix)
 rotation_rate = 4.1055886e-05 #n_io
 original_frame = global_frame_orientation
 target_frame = "IAU_Io"
-body_settings.get("Io").rotation_model_settings = environment_setup.rotation_model.simple(
-    original_frame, target_frame, initial_orientation, simulation_start_epoch, rotation_rate)
+#body_settings.get("Io").rotation_model_settings = environment_setup.rotation_model.simple(
+#    original_frame, target_frame, initial_orientation, simulation_start_epoch, rotation_rate)
 
 # Synchronous rotation model
 #body_settings.get("Io").rotation_model_settings = environment_setup.rotation_model.synchronous("Jupiter", global_frame_orientation, "IAU_Io")
