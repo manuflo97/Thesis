@@ -6,6 +6,7 @@ from tudatpy.kernel import numerical_simulation
 from tudatpy.kernel.interface import spice
 from tudatpy.kernel.numerical_simulation import environment_setup
 from tudatpy.kernel.numerical_simulation import propagation_setup, propagation
+from tudatpy.kernel.astro import element_conversion
 import numpy as np
 import json
 import pandas as pd
@@ -31,15 +32,29 @@ simulation_end_epoch = 1.0e7 + 10.0 * constants.JULIAN_YEAR
 bodies_to_create = ["Io","Jupiter","Europa"]
 
     # Create bodies in simulation.
-global_frame_origin = "SSB"
+global_frame_origin = "Jupiter"
 global_frame_orientation = "ECLIPJ2000"
 body_settings = environment_setup.get_default_body_settings(bodies_to_create,global_frame_origin,global_frame_orientation)
 
 # Rotation model settings
-#body_settings.get("Io").rotation_model_settings = environment_setup.rotation_model.synchronous(
-#"Jupiter", global_frame_orientation, "Io_Fixed")
+body_settings.get("Io").rotation_model_settings = environment_setup.rotation_model.synchronous("Jupiter", global_frame_orientation, "IAU_Io")
+body_settings.get("Europa").rotation_model_settings = environment_setup.rotation_model.synchronous("Jupiter", global_frame_orientation, "IAU_Europa")
 
 body_system = environment_setup.create_system_of_bodies(body_settings)
+
+#Initial state
+#Io
+initial_cartesian_state_io=get_state_of_bodies(["Io"], ["Jupiter"], body_system, simulation_start_epoch)
+jupiter_gravitational_parameter = body_system.get("Jupiter").gravitational_parameter
+initial_keplerian_state_io=element_conversion.cartesian_to_keplerian(initial_cartesian_state_io, jupiter_gravitational_parameter)
+a0_io=initial_keplerian_state_io[0]
+n0_io=np.sqrt(jupiter_gravitational_parameter/(a0_io**3))
+
+#Europa
+initial_cartesian_state_eur=get_state_of_bodies(["Europa"], ["Jupiter"], body_system, simulation_start_epoch)
+initial_keplerian_state_eur=element_conversion.cartesian_to_keplerian(initial_cartesian_state_io, jupiter_gravitational_parameter)
+a0_eur=initial_keplerian_state_eur[0]
+n0_eur=np.sqrt(jupiter_gravitational_parameter/(a0_eur**3))
 
 ################################################################################
 # SETUP PROPAGATION ############################################################
@@ -65,10 +80,7 @@ acceleration_settings_io = dict(
                propagation_setup.acceleration.direct_tidal_dissipation_acceleration(love_number_jup, time_lag_jup_io,
                                                                              False, True)  # Tide on Jupiter by Io
 ],
-   Europa = [propagation_setup.acceleration.point_mass_gravity(),
-            propagation_setup.acceleration.direct_tidal_dissipation_acceleration(love_number_io,time_lag_io,
-                                                                                  False, False), #Tide on Io by Europa
-])
+   Europa = [propagation_setup.acceleration.point_mass_gravity()])
 
 acceleration_settings_europa = dict(
     Jupiter = [propagation_setup.acceleration.point_mass_gravity(),
@@ -77,10 +89,7 @@ acceleration_settings_europa = dict(
                propagation_setup.acceleration.direct_tidal_dissipation_acceleration(love_number_jup, time_lag_jup_eur,
                                                                              False, True)  # Tide on Jupiter by Europa
 ],
-    Io = [propagation_setup.acceleration.point_mass_gravity(),
-          propagation_setup.acceleration.direct_tidal_dissipation_acceleration(love_number_eur,time_lag_eur,
-                                                                               False, False) # Tide on Europa by Io
-          ])
+    Io = [propagation_setup.acceleration.point_mass_gravity()])
 
 # Create global accelerations settings dictionary
 
@@ -287,4 +296,39 @@ for ax in fig2.get_axes():
     ax.relim()
     ax.autoscale_view()
 plt.tight_layout()
+#plt.show()
+
+#Mean motion over time
+n2=np.sqrt(jupiter_gravitational_parameter/(semi_major_axis_Io[len(semi_major_axis_Io)-1]**3))
+ndot_Io=(n2-n0_io)/(time[len(time)-1]-time[0])
+n_Io=list()
+n_Eur=list()
+resonance=list()
+j=0.0
+while j<len(time):
+    ni=np.sqrt(jupiter_gravitational_parameter/(semi_major_axis_Io[j]**3))
+    ne=np.sqrt(jupiter_gravitational_parameter/(semi_major_axis_eur[j]**3))
+    n_Io.append(ni)
+    n_Eur.append(ne)
+    resonance.append(ni/ne)
+    j=j+1
+
+plt.figure(figsize=(10,6))
+plt.title("Mean motion variation over time")
+plt.plot(time_day, n_Io, 'r', label="Io")
+plt.plot(time_day, n_Eur, 'b', label="Europa")
+plt.ylabel("Mean motion [rad/s]")
+plt.xlabel("Time [years]")
+plt.legend()
+plt.grid()
+plt.xlim([min(time_day), max(time_day)])
+plt.ylim([0, 5e-5])
+#plt.show()
+
+plt.figure(figsize=(10,6))
+plt.title("Resonance between mean motion of Io and Europa (n_Io/n_Europa) ")
+plt.plot(time_day, resonance, 'r')
+plt.xlabel("Time [years]")
+plt.grid()
+plt.xlim([min(time_day), max(time_day)])
 plt.show()
