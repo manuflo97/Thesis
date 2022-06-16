@@ -6,8 +6,9 @@ from tudatpy.kernel import numerical_simulation
 from tudatpy.kernel.interface import spice
 from tudatpy.kernel.numerical_simulation import environment_setup
 from tudatpy.kernel.numerical_simulation import propagation_setup, propagation
-from tudatpy.kernel.astro import element_conversion
+from tudatpy.kernel.astro import element_conversion, time_conversion
 import numpy as np
+import datetime
 import json
 import pandas as pd
 from pandas import DataFrame
@@ -16,13 +17,14 @@ from pandas import DataFrame
 ################################################################################
 
     # Load spice kernels.
-spice.load_standard_kernels()
+spice.load_kernel("C:/Users/manu9/OneDrive/Desktop/Ephemeris/jup365.bsp")
 
     # Set simulation start epoch.
-simulation_start_epoch = 1.0e7
+calendar_start = datetime.datetime(2020,4,1)
+simulation_start_epoch = time_conversion.calendar_date_to_julian_day_since_epoch(calendar_start)*constants.JULIAN_DAY
 
     # Set simulation end epoch.
-simulation_end_epoch = 1.0e7 + 10.0 * constants.JULIAN_YEAR
+simulation_end_epoch = simulation_start_epoch + 1.0 * constants.JULIAN_YEAR
 
 ################################################################################
 # SETUP ENVIRONMENT ############################################################
@@ -182,7 +184,7 @@ df_array = pd.DataFrame(data=states_array)
 
 dep_var_array = result2array(dep_var)
 
-np.savetxt("out_all_tides.dat", dep_var_array)
+#np.savetxt("out_all_tides.dat", dep_var_array)
 
 time = dep_var_array[:,0]
 time_step = time-1.0e7
@@ -312,6 +314,8 @@ while j<len(time):
     n_Eur.append(ne)
     resonance.append(ni/ne)
     j=j+1
+
+#np.savetxt("resonance_io_eur.txt", resonance)
 
 plt.figure(figsize=(10,6))
 plt.title("Mean motion variation over time")
