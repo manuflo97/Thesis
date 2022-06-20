@@ -48,7 +48,7 @@ body_settings.get("Io").gravity_field_variation_settings = gravity_field_variati
 sine_coefficients_io = [
     [0,                   0,                   0], #[degree 0]
     [0,                   0,                   0], #[10, 11, 12]
-    [0,                  -0.0,                 -9.93752553432869e-06]] #[20, 21, 22]   -9.948105019330582e-06 for librations of 10
+    [0,                  -0.0,                 -9.93746153432869e-06]] #[20, 21, 22]   -9.948105019330582e-06 for librations of 10
 cosine_coefficients_io = [
     [1,                   0,                   0], #[degree 0]
     [0,                   0,                   0], #[10, 11, 12]
@@ -73,7 +73,7 @@ body_settings.get("Io").rotation_model_settings = environment_setup.rotation_mod
 body_system = environment_setup.create_system_of_bodies(body_settings)
 
 # Librations
-scaled_libration_amplitude = -6.7
+scaled_libration_amplitude = -6.66
 libration_calculator = environment.DirectLongitudeLibrationCalculator(scaled_libration_amplitude)
 body_system.get("Io").rotation_model.libration_calculator = libration_calculator
 
@@ -174,8 +174,8 @@ fig, ((ax2, ax3), (ax4, ax5), (ax6, ax7)) = plt.subplots(3, 2, figsize=(9, 12))
 fig.suptitle('Kepler elements variation of Io due to tide raised on Io with librations')
 
 #SEMI MAJOR AXIS
-c = 1.15986e-17#1.31e-17#
-D = 7401.0
+c = 1.33e-17##1.15986e-17#
+D = 6603
 semi_major_axis = dep_var_array.loc[:,"a"]
 eccentricity = dep_var_array.loc[:,"e"]
 
@@ -235,7 +235,7 @@ S21 = dep_var_array.loc[:,"S21"]
 S20 = dep_var_array.loc[:,"S20"]
 
 C = 0.6455*3/5*(jupiter_gravitational_parameter/io_gravitational_parameter)*((1821.6e3/semi_major_axis)**3)
-k2 = 0.04
+k2 = 0.7
 k2Q = 0.015
 latitude = (dep_var_array.loc[:,"Lat"])
 longitude = (dep_var_array.loc[:,"Lon"])
@@ -274,6 +274,15 @@ plt.title("DeltaS22 difference over time")
 plt.plot(time_day, differenceC22, 'b', label="C22")
 plt.plot(time_day, differenceS22, 'r', label = "S22")
 plt.legend(loc = "upper right")
+plt.xlabel("Time [years]")
+plt.grid()
+plt.xlim([min(time_day), max(time_day)])
+#plt.show()
+
+longitude = np.rad2deg(longitude)
+plt.figure(figsize=(10,6))
+plt.title("Longitude over time")
+plt.plot(time_day, longitude, 'g')
 plt.xlabel("Time [years]")
 plt.grid()
 plt.xlim([min(time_day), max(time_day)])
