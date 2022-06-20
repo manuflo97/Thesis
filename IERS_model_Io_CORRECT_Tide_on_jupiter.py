@@ -175,7 +175,7 @@ fig.suptitle('Evolution of Kepler elements of Io during the propagation, due to 
 
 #SEMI MAJOR AXIS
 c = 1.33e-17#1.15986e-17#
-D = 7401.0
+D = 6603
 semi_major_axis = dep_var_array.loc[:,"a"]
 eccentricity = dep_var_array.loc[:,"e"]
 
