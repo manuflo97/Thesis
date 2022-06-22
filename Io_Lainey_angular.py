@@ -60,9 +60,9 @@ time_lag_jup = 0.1016
 acceleration_settings_jup = dict(
     Io = [propagation_setup.acceleration.point_mass_gravity(),
                propagation_setup.acceleration.direct_tidal_dissipation_acceleration(love_number_io, time_lag_io,
-                                                                            False, True),
+                                                                            False, True), #Tide on satellite
            #    propagation_setup.acceleration.direct_tidal_dissipation_acceleration(love_number_jup, time_lag_jup,
-            ##                                                                  False, True)
+            ##                                                                  False, False) #Tide on planet
                ])
 
 # Create global accelerations settings dictionary
