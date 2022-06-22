@@ -20,7 +20,7 @@ spice.load_standard_kernels()
 simulation_start_epoch = 1.0e7
 
 # Set simulation end epoch.
-simulation_end_epoch = 1.0e7 + 5.5 * constants.JULIAN_YEAR
+simulation_end_epoch = 1.0e7 + 5.0 * constants.JULIAN_YEAR
 
 ################################################################################
 # SETUP ENVIRONMENT ############################################################
@@ -146,7 +146,7 @@ fig.suptitle('Kepler elements of Io during the propagation')
 eccentricity = dep_var_array.loc[:,"e"]
 semi_major_axis = dep_var_array.loc[:,"a"]
 
-c = 1.33e-17
+c = 1.34e-17
 D = 6603.0
 
 #dadt = 2/3*c*(1-7*D*(eccentricity[0])**2)*semi_major_axis[0] # Planet + Satellite
