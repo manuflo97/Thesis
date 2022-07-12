@@ -121,6 +121,7 @@ dependent_variables_to_save = [
     propagation_setup.dependent_variable.keplerian_state("Io","Jupiter"),
     propagation_setup.dependent_variable.latitude("Io","Jupiter"),
     propagation_setup.dependent_variable.longitude("Io","Jupiter"),
+    propagation_setup.dependent_variable.central_body_fixed_spherical_position("Io","Jupiter"),
     propagation_setup.dependent_variable.total_spherical_harmonic_sine_coefficien_variations("Jupiter",2,2,0,2), #S20 S21 S22
     propagation_setup.dependent_variable.total_spherical_harmonic_cosine_coefficien_variations("Jupiter",2,2,0,2), #C20, C21, C22
 ]
@@ -168,7 +169,7 @@ time = dep_var_array[:,0]
 time_step = time-1.0e7
 time_day = time_step / (3600*24*365)
 
-dep_var_array = pd.DataFrame(data=dep_var_array, columns ="t a e i Argument_periapsis RAAN true_anomaly Lat Lon S20 S21 S22 C20 C21 C22".split())
+dep_var_array = pd.DataFrame(data=dep_var_array, columns ="t a e i Argument_periapsis RAAN true_anomaly Lat Lon Pos lat lon S20 S21 S22 C20 C21 C22".split())
 
 fig, ((ax2, ax3), (ax4, ax5), (ax6, ax7)) = plt.subplots(3, 2, figsize=(9, 12))
 fig.suptitle('Evolution of Kepler elements of Io during the propagation, due to tide raised on Jupiter')
@@ -178,6 +179,7 @@ c = 1.33e-17#1.15986e-17#
 D = 6603
 semi_major_axis = dep_var_array.loc[:,"a"]
 eccentricity = dep_var_array.loc[:,"e"]
+Pos=dep_var_array.loc[:,"Pos"]
 
 dadt = (2/3)*c*semi_major_axis # Planet
 dedt = (57*0.379*8.931938e22*2*np.pi/152853.5)*eccentricity[0]*((69911000/semi_major_axis[0])**5)/(35600*8*1.8982e27) # Planet
@@ -226,7 +228,7 @@ for ax in fig.get_axes():
     ax.relim()
     ax.autoscale_view()
 plt.tight_layout()
-plt.show()
+#plt.show()
 
 S22 = dep_var_array.loc[:,"S22"]
 C22 = dep_var_array.loc[:,"C22"]
@@ -234,7 +236,7 @@ C20 = dep_var_array.loc[:,"C20"]
 C21 = dep_var_array.loc[:,"C21"]
 S21 = dep_var_array.loc[:,"S21"]
 
-C=0.6455*3/5*(io_gravitational_parameter/jupiter_gravitational_parameter)*((71492000/semi_major_axis[0])**3)
+C=0.6455*3/5*(io_gravitational_parameter/jupiter_gravitational_parameter)*((71492000/Pos)**3)
 k2=0.379
 k2Q=-1.102e-5
 latitude = (dep_var_array.loc[:,"Lat"])
@@ -248,29 +250,29 @@ coeff=coeff.transpose()
 coeff=pd.DataFrame(data=coeff, columns="DC22 DC22_sim DS22 DS22_sim C21 S21 C20".split())
 #print(coeff)
 
-#plt.figure(figsize=(10,6))
-#plt.title("Spherical harmonic coefficients of Jupiter variation over time")
-#plt.plot(time_day, S22, 'r', label = "Simulated S22")
-#plt.plot(time_day, DeltaS22, 'b--', label = "Theoeritical S22")
-#plt.plot(time_day, C22, 'g', label = "Simulated C22")
-#plt.plot(time_day, DeltaC22, 'm--', label = "Theoretical C22")
-#plt.legend(loc = "right")
-#plt.ylabel("S22")
-#plt.xlabel("Time [years]")
-#plt.grid()
-#plt.tight_layout()
-#plt.xlim([min(time_day), max(time_day)])
+plt.figure(figsize=(10,6))
+plt.title("Spherical harmonic coefficients of Jupiter variation over time")
+plt.plot(time_day, S22, 'r', label = "Simulated S22")
+plt.plot(time_day, DeltaS22, 'b--', label = "Theoeritical S22")
+plt.plot(time_day, C22, 'g', label = "Simulated C22")
+plt.plot(time_day, DeltaC22, 'm--', label = "Theoretical C22")
+plt.legend(loc = "right")
+plt.ylabel("S22")
+plt.xlabel("Time [years]")
+plt.grid()
+plt.tight_layout()
+plt.xlim([min(time_day), max(time_day)])
 #plt.show()
 
-#differenceC22=C22-DeltaC22
-#differenceS22=S22-DeltaS22
+differenceC22=C22-DeltaC22
+differenceS22=S22-DeltaS22
 
-#plt.figure(figsize=(10,6))
-#plt.title("DeltaS22 difference over time")
-#plt.plot(time_day, differenceC22, 'b', label="C22")
-#plt.plot(time_day, differenceS22, 'r', label = "S22")
-#plt.legend("Right upper")
-#plt.xlabel("Time [years]")
-#plt.grid()
-#plt.xlim([min(time_day), max(time_day)])
-#plt.show()
+plt.figure(figsize=(10,6))
+plt.title("DeltaS22 difference over time")
+plt.plot(time_day, differenceC22, 'b', label="C22")
+plt.plot(time_day, differenceS22, 'r', label = "S22")
+plt.legend(loc = "upper right")
+plt.xlabel("Time [years]")
+plt.grid()
+plt.xlim([min(time_day), max(time_day)])
+plt.show()
