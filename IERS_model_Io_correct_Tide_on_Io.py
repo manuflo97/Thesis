@@ -21,7 +21,7 @@ from matplotlib import pyplot as plt
 # Load spice kernels.
 spice.load_standard_kernels()
 simulation_start_epoch = 1.0e7
-simulation_end_epoch = simulation_start_epoch + 1.774*2000 * constants.JULIAN_DAY
+simulation_end_epoch = simulation_start_epoch + 1.774*200 * constants.JULIAN_DAY
 # Define bodies in simulation.
 bodies_to_create = ["Io","Jupiter"]
 # Create bodies in simulation.
@@ -38,7 +38,7 @@ love_numbers = dict()
 love_numbers[ 2 ] = list()
 love_numbers[ 2 ].append(complex(0.0, -0.0))
 love_numbers[ 2 ].append(complex(0.0, -0.0))
-love_numbers[ 2 ].append(complex(0.04, -0.015))
+love_numbers[ 2 ].append(complex(0.0, -0.015))
 gravity_field_variation_list = list()
 gravity_field_variation_list.append(environment_setup.gravity_field_variation.solid_body_tide_degree_order_variable_complex_k(
      tide_raising_body, love_numbers))
@@ -48,7 +48,7 @@ body_settings.get("Io").gravity_field_variation_settings = gravity_field_variati
 sine_coefficients_io = [
     [0,                   0,                   0], #[degree 0]
     [0,                   0,                   0], #[10, 11, 12]
-    [0,                  -0.0,                 -9.93746153432869e-06]] #[20, 21, 22]   -9.948105019330582e-06 for librations of 10
+    [0,                  -0.0,                 -9.93746153432869e-06]] #[20, 21, 22]   for librations of -6.66
 cosine_coefficients_io = [
     [1,                   0,                   0], #[degree 0]
     [0,                   0,                   0], #[10, 11, 12]
@@ -121,6 +121,7 @@ dependent_variables_to_save = [
     propagation_setup.dependent_variable.keplerian_state("Io","Jupiter"),
     propagation_setup.dependent_variable.latitude("Jupiter","Io"),
     propagation_setup.dependent_variable.longitude("Jupiter","Io"),
+    propagation_setup.dependent_variable.central_body_fixed_spherical_position("Io","Jupiter"),
     propagation_setup.dependent_variable.total_spherical_harmonic_sine_coefficien_variations("Io",2,2,0,2), #S20 S21 S22
     propagation_setup.dependent_variable.total_spherical_harmonic_cosine_coefficien_variations("Io",2,2,0,2), #C20, C21, C22
 ]
@@ -168,7 +169,7 @@ time = dep_var_array[:,0]
 time_step = time-1.0e7
 time_day = time_step / (3600*24*365)
 
-dep_var_array = pd.DataFrame(data=dep_var_array, columns ="t a e i Argument_periapsis RAAN true_anomaly Lat Lon S20 S21 S22 C20 C21 C22".split())
+dep_var_array = pd.DataFrame(data=dep_var_array, columns ="t a e i Argument_periapsis RAAN true_anomaly Lat Lon Pos lat lon S20 S21 S22 C20 C21 C22".split())
 
 fig, ((ax2, ax3), (ax4, ax5), (ax6, ax7)) = plt.subplots(3, 2, figsize=(9, 12))
 fig.suptitle('Kepler elements variation of Io due to tide raised on Io with librations')
@@ -178,6 +179,7 @@ c = 1.33e-17##1.15986e-17#
 D = 6603
 semi_major_axis = dep_var_array.loc[:,"a"]
 eccentricity = dep_var_array.loc[:,"e"]
+Pos = dep_var_array.loc[:,"Pos"]
 
 dadt = -14/3*c*D*semi_major_axis*(eccentricity)**2 # Satellite
 #dadt = (2/3)*c*semi_major_axis[0] # Planet
@@ -234,8 +236,8 @@ C22 = dep_var_array.loc[:,"C22"]
 S21 = dep_var_array.loc[:,"S21"]
 S20 = dep_var_array.loc[:,"S20"]
 
-C = 0.6455*3/5*(jupiter_gravitational_parameter/io_gravitational_parameter)*((1821.6e3/semi_major_axis)**3)
-k2 = 0.7
+C = 0.6455*3/5*(jupiter_gravitational_parameter/io_gravitational_parameter)*((1821.6e3/Pos)**3)
+k2 = 0.0
 k2Q = 0.015
 latitude = (dep_var_array.loc[:,"Lat"])
 longitude = (dep_var_array.loc[:,"Lon"])
