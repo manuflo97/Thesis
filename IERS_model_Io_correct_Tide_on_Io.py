@@ -21,7 +21,7 @@ from matplotlib import pyplot as plt
 # Load spice kernels.
 spice.load_standard_kernels()
 simulation_start_epoch = 1.0e7
-simulation_end_epoch = simulation_start_epoch + 1.774*200 * constants.JULIAN_DAY
+simulation_end_epoch = simulation_start_epoch + 1.774*50 * constants.JULIAN_DAY
 # Define bodies in simulation.
 bodies_to_create = ["Io","Jupiter"]
 # Create bodies in simulation.
@@ -251,10 +251,10 @@ coeff=pd.DataFrame(data=coeff, columns="DS22 DS22_sim".split())
 
 plt.figure(figsize=(10,6))
 plt.title("Spherical harmonic coefficients variation over time")
-plt.plot(time_day, S22, 'r--', label = "Simulated S22")
-plt.plot(time_day, DeltaS22, 'b--', label = "Theoretical S22")
+#plt.plot(time_day, S22, 'r', label = "Simulated S22")
+#plt.plot(time_day, DeltaS22, 'b--', label = "Theoretical S22")
 
-plt.plot(time_day, C22, 'g--', label = "Simulated C22")
+plt.plot(time_day, C22, 'g', label = "Simulated C22")
 plt.plot(time_day, DeltaC22, 'm--', label = "Theoretical C22")
 
 plt.legend(loc = "right")
@@ -272,9 +272,9 @@ differenceC22=C22-DeltaC22
 differenceS22=S22-DeltaS22
 
 plt.figure(figsize=(10,6))
-plt.title("DeltaS22 difference over time")
+plt.title("DeltaC22 difference over time")
 plt.plot(time_day, differenceC22, 'b', label="C22")
-plt.plot(time_day, differenceS22, 'r', label = "S22")
+#plt.plot(time_day, differenceS22, 'r', label = "S22")
 plt.legend(loc = "upper right")
 plt.xlabel("Time [years]")
 plt.grid()
@@ -289,5 +289,3 @@ plt.xlabel("Time [years]")
 plt.grid()
 plt.xlim([min(time_day), max(time_day)])
 plt.show()
-
-#np.savetxt("coefficients.txt", coeff)
