@@ -76,7 +76,7 @@ time_lag_jup = 0.1016
 acceleration_settings_io = dict(
     Jupiter = [propagation_setup.acceleration.spherical_harmonic_gravity(2,2),
                propagation_setup.acceleration.direct_tidal_dissipation_acceleration(love_number_io,time_lag_io,
-                                                                             False, False), # Tide on satellite
+                                                                             True, False), # Tide on satellite
            #    propagation_setup.acceleration.direct_tidal_dissipation_acceleration(love_number_jup, time_lag_jup,
            #                                                                  False, True)  # Tide on planet
                ])
@@ -203,17 +203,17 @@ dedt = -7/3*c*D*eccentricity[0] # Satellite (+ Planet)
 #SEMI MAJOR AXIS
 yacc = semi_major_axis[0] + dadt*time
 ax2.plot(time_day, semi_major_axis, 'r', label = "Simulation")
-ax2.plot(time_day, yacc, 'b', label = "Theoretical")
-ax2.legend(loc="upper left")
+#ax2.plot(time_day, yacc, 'b', label = "Theoretical")
+#ax2.legend(loc="upper left")
 ax2.set_ylabel('Semi-major axis [m]')
 #ax2.set_ylim([4.22020296*1e8, 4.22020299*1e8])
 
 #ECCENTRICITY
 yecc= eccentricity[0] + dedt*time
 ax3.plot(time_day, eccentricity,'r', label = "Simulation")
-ax3.plot(time_day, yecc,'b', label = "Theoretical")
+#ax3.plot(time_day, yecc,'b', label = "Theoretical")
 ax3.set_ylabel('Eccentricity [-]')
-ax3.legend(loc="upper right")
+#ax3.legend(loc="upper right")
 #ax3.set_ylim([0.0036393, 0.003640])
 
 #INCLINATION
